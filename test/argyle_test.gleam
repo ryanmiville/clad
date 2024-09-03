@@ -14,12 +14,12 @@ pub fn decode_test() {
     dynamic.decode2(
       Options,
       dynamic.field("--foo", dynamic.string),
-      dynamic.field("--bar", dynamic.string),
+      dynamic.field("--bar", dynamic.int),
     )
   argyle.decode(args, dec)
-  |> should.equal(Ok(Options("hello", "1")))
+  |> should.equal(Ok(Options("hello", 1)))
 }
 
 type Options {
-  Options(foo: String, bar: String)
+  Options(foo: String, bar: Int)
 }
