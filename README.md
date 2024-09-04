@@ -1,20 +1,20 @@
-# argyle
+# clad
 
-[![Package Version](https://img.shields.io/hexpm/v/argyle)](https://hex.pm/packages/argyle)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/argyle/)
+[![Package Version](https://img.shields.io/hexpm/v/clad)](https://hex.pm/packages/clad)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/clad/)
 
 ```sh
-gleam add argyle@1
+gleam add clad
 ```
 ```gleam
-import argyle
+import clad
 
 pub fn main() {
   // TODO: An example of the project in use
 }
 ```
 
-Further documentation can be found at <https://hexdocs.pm/argyle>.
+Further documentation can be found at <https://hexdocs.pm/clad>.
 
 ## Development
 
