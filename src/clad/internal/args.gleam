@@ -45,9 +45,9 @@ fn is_name(input: String) -> Bool {
   }
 }
 
-fn is_alpha(character: String) {
-  case character {
-    "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" -> False
-    _ -> True
+pub fn is_alpha(character: String) -> Bool {
+  case string.to_graphemes(character) {
+    [grapheme] -> string.lowercase(grapheme) != string.uppercase(grapheme)
+    _ -> False
   }
 }
