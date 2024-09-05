@@ -18,16 +18,16 @@ fn greet(args: Args) {
 }
 
 pub fn main() {
-  let decoder =
+  let args =
     dynamic.decode3(
       Args,
-      clad.arg(long_name: "name", short_name: "n", of: dynamic.string),
-      clad.arg(long_name: "count", short_name: "c", of: dynamic.int)
-        |> clad.with_default(1),
-      clad.flag(long_name: "scream", short_name: "s"),
+      clad.string(long_name: "name", short_name: "n"),
+      clad.int(long_name: "count", short_name: "c") |> clad.with_default(1),
+      clad.bool(long_name: "scream", short_name: "s"),
     )
+    |> clad.decode(argv.load().arguments)
 
-  case clad.decode(argv.load().arguments, decoder) {
+  case args {
     Ok(args) -> greet(args)
     _ ->
       io.println(

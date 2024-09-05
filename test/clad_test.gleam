@@ -1,8 +1,8 @@
 import clad
+import clad/internal/args
 import gleam/dynamic
 import gleeunit
 import gleeunit/should
-import internal/args
 
 pub fn main() {
   gleeunit.main()
@@ -13,44 +13,77 @@ type Options {
 }
 
 pub fn decode_test() {
+  clad.string(long_name: "foo", short_name: "f")
+  |> clad.decode(["-f", "hello"])
+  |> should.equal(Ok("hello"))
+
+  clad.int(long_name: "bar", short_name: "b")
+  |> clad.decode(["-b", "1"])
+  |> should.equal(Ok(1))
+
+  clad.bool(long_name: "baz", short_name: "z")
+  |> clad.decode(["-z"])
+  |> should.equal(Ok(True))
+
+  clad.bool(long_name: "baz", short_name: "z")
+  |> clad.decode([])
+  |> should.equal(Ok(False))
+
+  clad.float(long_name: "qux", short_name: "q")
+  |> clad.decode(["-q", "2.5"])
+  |> should.equal(Ok(2.5))
+
+  clad.float(long_name: "qux", short_name: "q")
+  |> clad.decode([])
+  |> should.be_error
+
+  clad.float(long_name: "qux", short_name: "q")
+  |> clad.with_default(0.0)
+  |> clad.decode([])
+  |> should.equal(Ok(0.0))
+
+  clad.float(long_name: "qux", short_name: "q")
+  |> clad.with_default(0.0)
+  |> clad.decode(["-q", "2.5"])
+  |> should.equal(Ok(2.5))
+
   let dec =
     dynamic.decode4(
       Options,
-      clad.arg(long_name: "foo", short_name: "f", of: dynamic.string),
-      clad.arg(long_name: "bar", short_name: "b", of: dynamic.int),
-      clad.flag(long_name: "baz", short_name: "z"),
-      clad.arg(long_name: "qux", short_name: "q", of: dynamic.float)
-        |> clad.with_default(0.0),
+      clad.string(long_name: "foo", short_name: "f"),
+      clad.int(long_name: "bar", short_name: "b"),
+      clad.bool(long_name: "baz", short_name: "z"),
+      clad.float(long_name: "qux", short_name: "q") |> clad.with_default(0.0),
     )
 
   // all fields set
   let args = ["--foo", "hello", "-b", "1", "--baz", "-q", "2.5"]
-  clad.decode(args, dec)
+  clad.decode(dec, args)
   |> should.equal(Ok(Options("hello", 1, True, 2.5)))
 
   // using '='
   let args = ["--foo=hello", "-b=1", "--baz", "-q", "2.5"]
-  clad.decode(args, dec)
+  clad.decode(dec, args)
   |> should.equal(Ok(Options("hello", 1, True, 2.5)))
 
   // missing field with default value
   let args = ["--foo", "hello", "--bar", "1", "--baz"]
-  clad.decode(args, dec)
+  clad.decode(dec, args)
   |> should.equal(Ok(Options("hello", 1, True, 0.0)))
 
   // missing flag field
   let args = ["--foo", "hello", "--bar", "1"]
-  clad.decode(args, dec)
+  clad.decode(dec, args)
   |> should.equal(Ok(Options("hello", 1, False, 0.0)))
 
   // explicit setting flag to 'true'
   let args = ["--foo", "hello", "--bar", "1", "-z", "true"]
-  clad.decode(args, dec)
+  clad.decode(dec, args)
   |> should.equal(Ok(Options("hello", 1, True, 0.0)))
 
   // explicit setting flag to 'false'
   let args = ["--foo", "hello", "--bar", "1", "-z", "false"]
-  clad.decode(args, dec)
+  clad.decode(dec, args)
   |> should.equal(Ok(Options("hello", 1, False, 0.0)))
 }
 
