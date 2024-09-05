@@ -24,7 +24,6 @@ This program is in the [examples directory](https://github.com/ryanmiville/clad/
 ```gleam
 import argv
 import clad
-import gleam/dynamic
 import gleam/io
 import gleam/list
 import gleam/string
@@ -41,14 +40,20 @@ fn greet(args: Args) {
   list.repeat(greeting, args.count) |> list.each(io.println)
 }
 
+fn args_decoder() {
+  use name <- clad.string(long_name: "name", short_name: "n")
+  use count <- clad.int_with_default(
+    long_name: "count",
+    short_name: "c",
+    default: 1,
+  )
+  use scream <- clad.bool(long_name: "scream", short_name: "s")
+  clad.decoded(Args(name:, count:, scream:))
+}
+
 pub fn main() {
   let args =
-    dynamic.decode3(
-      Args,
-      clad.string(long_name: "name", short_name: "n"),
-      clad.int(long_name: "count", short_name: "c") |> clad.with_default(1),
-      clad.bool(long_name: "scream", short_name: "s"),
-    )
+    args_decoder()
     |> clad.decode(argv.load().arguments)
 
   case args {
