@@ -1,5 +1,6 @@
 import clad
 import clad/internal/args
+import gleam/dynamic.{DecodeError}
 import gleeunit
 import gleeunit/should
 
@@ -95,6 +96,57 @@ pub fn decode_test() {
   let args = ["--foo", "hello", "--bar", "1", "-z", "false"]
   clad.decode(decoder, args)
   |> should.equal(Ok(Options("hello", 1, False, 0.0)))
+}
+
+pub fn decode_errors_test() {
+  clad.string(long_name: "foo", short_name: "f", then: clad.decoded)
+  |> clad.decode(["--bar", "hello"])
+  |> should.equal(Error([DecodeError("field", "nothing", ["--foo"])]))
+
+  clad.string(long_name: "foo", short_name: "f", then: clad.decoded)
+  |> clad.decode(["--foo", "1"])
+  |> should.equal(Error([DecodeError("String", "Int", ["--foo"])]))
+
+  clad.string_with_default("foo", "f", "hello", clad.decoded)
+  |> clad.decode(["--foo", "1"])
+  |> should.equal(Error([DecodeError("String", "Int", ["--foo"])]))
+
+  let decoder = {
+    use foo <- clad.string(long_name: "foo", short_name: "f")
+    use bar <- clad.int(long_name: "bar", short_name: "b")
+    use baz <- clad.bool(long_name: "baz", short_name: "z")
+    use qux <- clad.float_with_default(
+      long_name: "qux",
+      short_name: "q",
+      default: 0.0,
+    )
+    clad.decoded(Options(foo:, bar:, baz:, qux:))
+  }
+
+  // no fields
+  let args = []
+  clad.decode(decoder, args)
+  |> should.equal(Error([DecodeError("field", "nothing", ["--foo"])]))
+
+  // missing first field
+  let args = ["-b", "1"]
+  clad.decode(decoder, args)
+  |> should.equal(Error([DecodeError("field", "nothing", ["--foo"])]))
+
+  // missing second field
+  let args = ["--foo", "hello"]
+  clad.decode(decoder, args)
+  |> should.equal(Error([DecodeError("field", "nothing", ["--bar"])]))
+
+  // wrong type
+  let args = ["--foo", "hello", "-b", "world"]
+  clad.decode(decoder, args)
+  |> should.equal(Error([DecodeError("Int", "String", ["-b"])]))
+
+  // default field wrong type
+  let args = ["--foo", "hello", "-b", "1", "--baz", "--qux", "world"]
+  clad.decode(decoder, args)
+  |> should.equal(Error([DecodeError("Float", "String", ["--qux"])]))
 }
 
 pub fn add_bools_test() {

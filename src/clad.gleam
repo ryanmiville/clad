@@ -2,8 +2,8 @@
 //// provides primitives to build a `dynamic.Decoder` to decode records from command line
 //// arguments.
 ////
-//// Arguments are parsed from long names (`--name`) or short names (`-n`). 
-//// Values are decoded in the form `--name value` or `--name=value`. 
+//// Arguments are parsed from long names (`--name`) or short names (`-n`).
+//// Values are decoded in the form `--name value` or `--name=value`.
 //// Boolean flags do not need an explicit value. If the flag exists it is `True`,
 //// and `False` if it is missing. (i.e. `--verbose`)
 ////
@@ -16,14 +16,14 @@
 //// ```sh
 //// --name Lucy --count 3 --verbose
 //// --name Lucy --count 3 --verbose true
-//// --name=Lucy --count=3 --verbosetrue
+//// --name=Lucy --count=3 --verbose=true
 //// ```
 ////
 //// ```gleam
 //// // {"--name": "Lucy", "--count": 3, "--verbose": true}
 //// ```
 ////
-//// Clad encodes the arguments without any knowledge of your target record. Therefore 
+//// Clad encodes the arguments without any knowledge of your target record. Therefore
 //// missing Bool arguments are not encoded at all:
 ////
 //// ```sh
@@ -95,8 +95,8 @@
 //// ```gleam
 //// // arguments: ["--name", "Lucy", "--count", "3", "--verbose"]
 ////
-//// let args = 
-////   arg_decoder() 
+//// let args =
+////   arg_decoder()
 ////   |> clad.decode(arguments)
 //// let assert Ok(Args("Lucy", 3, True)) = args
 //// ```
@@ -107,7 +107,30 @@
 //// --name Lucy --count 3 --verbose
 //// --name=Lucy -c 3 -v=true
 //// -n=Lucy -c=3 -v
-//// ``` 
+//// ```
+//// # Errors
+////
+//// Clad returns the first error it encounters. If  multiple fields have errors, only the first one will be returned.
+////
+//// ```gleam
+//// // arguments: ["--count", "three"]
+////
+//// let args =
+////   arg_decoder()
+////   |> clad.decode(arguments)
+//// let assert Error([DecodeError("field", "nothing", ["--name"])]) = args
+//// ```
+////
+//// If a field has a default value, but the argument is supplied with the incorrect type, an error will be returned rather than falling back on the default value.
+////
+//// ```gleam
+//// // arguments: ["-n", "Lucy" "-c", "three"]
+////
+//// let args =
+////   arg_decoder()
+////   |> clad.decode(arguments)
+//// let assert Error([DecodeError("Int", "String", ["-c"])]) = args
+//// ```
 
 import clad/internal/args
 import gleam/dict
@@ -302,13 +325,13 @@ pub fn bool(
 
 /// A decoder that decodes Bool arguments. Assigns a default value if the
 /// argument is missing.
-/// 
+///
 /// This function is only necessary if you want to assign the default value as `True`.
 /// # Examples
 /// ```gleam
 /// // data: []
 /// use verbose <- clad.bool(
-///   long_name: "verbose", 
+///   long_name: "verbose",
 ///   short_name: "v",
 ///   default: True,
 /// )
@@ -320,10 +343,30 @@ pub fn bool_with_default(
   default default: Bool,
   then next: fn(Bool) -> Decoder(b),
 ) -> Decoder(b) {
+  // fn(data) {
+  //   let decoder =
+  //     flag_with_default(long_name, short_name, dynamic.bool, default, next)
+
+  //   case decoder(data) {
+  //     Ok(decoded) -> Ok(decoded)
+  //     Error([DecodeError("field", "nothing", [name])]) if name == long_name ->
+  //       next(default)(data)
+  //     errors -> errors
+  //   }
+  // }
+
+  // fn(data) {
+  //   case do_flag(long_name, short_name, dynamic.bool)(data) {
+  //     Ok(decoded) -> Ok(decoded)
+  //   }
+  //   use a <- result.try(first(data))
+  //   next(a)(data)
+  // }
+
   flag_with_default(long_name, short_name, dynamic.bool, default, next)
 }
 
-/// Creates a decoder which directly returns the provided value. 
+/// Creates a decoder which directly returns the provided value.
 /// Used to collect decoded values into a record.
 /// # Examples
 /// ```gleam
@@ -368,16 +411,28 @@ fn do_flag(
   short_name short_name: String,
   of decoder: Decoder(t),
 ) -> Decoder(t) {
-  dynamic.any([
-    do_long_name(long_name, decoder),
-    do_short_name(short_name, decoder),
-  ])
+  fn(data) {
+    case do_long_name(long_name, decoder)(data) {
+      Ok(decoded) -> Ok(decoded)
+      Error([DecodeError("field", "nothing", [_])] as errors) -> {
+        case do_short_name(short_name, decoder)(data) {
+          Ok(decoded) -> Ok(decoded)
+          Error([DecodeError("field", "nothing", [_])]) -> Error(errors)
+          other -> other
+        }
+      }
+      error -> error
+    }
+  }
 }
 
 fn with_default(decoder: Decoder(t), default: t) -> Decoder(t) {
   fn(data) {
-    use _ <- result.try_recover(decoder(data))
-    Ok(default)
+    case decoder(data) {
+      Ok(decoded) -> Ok(decoded)
+      Error([DecodeError("field", "nothing", [_])]) -> Ok(default)
+      errors -> errors
+    }
   }
 }
 
