@@ -1,5 +1,6 @@
 import gleam/bool
 import gleam/list
+import gleam/regex
 import gleam/string
 
 pub fn split_equals(arguments: List(String)) -> List(String) {
@@ -46,8 +47,6 @@ fn is_name(input: String) -> Bool {
 }
 
 fn is_alpha(character: String) {
-  case character {
-    "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" -> False
-    _ -> True
-  }
+  let assert Ok(re) = regex.from_string("^[A-Za-z]")
+  regex.check(re, character)
 }

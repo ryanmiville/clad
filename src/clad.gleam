@@ -133,13 +133,14 @@
 //// ```
 
 import clad/internal/args
-import gleam/dict
+import gleam/dict.{type Dict}
 import gleam/dynamic.{
   type DecodeError, type DecodeErrors, type Decoder, type Dynamic, DecodeError,
 }
 import gleam/float
 import gleam/int
 import gleam/list
+import gleam/option.{None, Some}
 import gleam/result
 
 /// Run a decoder on a list of command line arguments, decoding the value if it
@@ -343,27 +344,20 @@ pub fn bool_with_default(
   default default: Bool,
   then next: fn(Bool) -> Decoder(b),
 ) -> Decoder(b) {
-  // fn(data) {
-  //   let decoder =
-  //     flag_with_default(long_name, short_name, dynamic.bool, default, next)
-
-  //   case decoder(data) {
-  //     Ok(decoded) -> Ok(decoded)
-  //     Error([DecodeError("field", "nothing", [name])]) if name == long_name ->
-  //       next(default)(data)
-  //     errors -> errors
-  //   }
-  // }
-
-  // fn(data) {
-  //   case do_flag(long_name, short_name, dynamic.bool)(data) {
-  //     Ok(decoded) -> Ok(decoded)
-  //   }
-  //   use a <- result.try(first(data))
-  //   next(a)(data)
-  // }
-
   flag_with_default(long_name, short_name, dynamic.bool, default, next)
+}
+
+pub fn list(
+  long_name long_name: String,
+  short_name short_name: String,
+  of inner: Decoder(t),
+  then next: fn(List(t)) -> Decoder(b),
+) -> Decoder(b) {
+  fn(data) {
+    let decoder = do_flag_list(long_name, short_name, inner)
+    use l <- result.try(decoder(data))
+    next(l)(data)
+  }
 }
 
 /// Creates a decoder which directly returns the provided value.
@@ -412,16 +406,37 @@ fn do_flag(
   of decoder: Decoder(t),
 ) -> Decoder(t) {
   fn(data) {
-    case do_long_name(long_name, decoder)(data) {
-      Ok(decoded) -> Ok(decoded)
-      Error([DecodeError("field", "nothing", [_])] as errors) -> {
-        case do_short_name(short_name, decoder)(data) {
-          Ok(decoded) -> Ok(decoded)
-          Error([DecodeError("field", "nothing", [_])]) -> Error(errors)
-          other -> other
-        }
-      }
-      error -> error
+    case do_flag_list(long_name, short_name, decoder)(data) {
+      Ok([a]) -> Ok(a)
+      Ok([a, ..]) ->
+        Error([
+          DecodeError(dynamic.classify(dynamic.from(a)), "List", [
+            "--" <> long_name,
+          ]),
+        ])
+      Error([DecodeError(_, _, [n, "*"]) as err]) ->
+        Error([DecodeError(..err, path: [n])])
+      Error(e) -> Error(e)
+      Ok([]) -> panic as "decoded empty list"
+    }
+  }
+}
+
+fn do_flag_list(
+  long_name long_name: String,
+  short_name short_name: String,
+  inner decoder: Decoder(t),
+) -> Decoder(List(t)) {
+  fn(data) {
+    let ln = long_name_list(long_name, decoder)(data)
+    let sn = short_name_list(short_name, decoder)(data)
+
+    case ln, sn {
+      Ok(Some(a)), Ok(Some(b)) -> Ok(list.append(a, b))
+      Ok(Some(a)), Ok(None) | Ok(None), Ok(Some(a)) -> Ok(a)
+      Ok(None), Ok(None) -> missing_field(long_name)
+      Error(e1), Error(e2) -> Error(list.append(e1, e2))
+      Error(e), _ | _, Error(e) -> Error(e)
     }
   }
 }
@@ -436,12 +451,12 @@ fn with_default(decoder: Decoder(t), default: t) -> Decoder(t) {
   }
 }
 
-fn do_long_name(long_name: String, decoder: Decoder(t)) {
-  dynamic.field("--" <> long_name, decoder)
+fn long_name_list(long_name: String, decoder: Decoder(t)) {
+  dynamic.optional_field("--" <> long_name, dynamic.list(decoder))
 }
 
-fn do_short_name(short_name: String, decoder: Decoder(t)) {
-  dynamic.field("-" <> short_name, decoder)
+fn short_name_list(short_name: String, decoder: Decoder(t)) {
+  dynamic.optional_field("-" <> short_name, dynamic.list(decoder))
 }
 
 fn fail(expected: String, found: String) {
@@ -474,5 +489,35 @@ fn try_parse_bool(input: String) {
 }
 
 fn object(entries: List(#(String, Dynamic))) -> dynamic.Dynamic {
-  dynamic.from(dict.from_list(entries))
+  do_object_list(entries, dict.new())
+}
+
+fn do_object_list(
+  entries: List(#(String, Dynamic)),
+  acc: Dict(String, Dynamic),
+) -> Dynamic {
+  case entries {
+    [] -> dynamic.from(acc)
+    [#(k, _), ..rest] -> {
+      case dict.has_key(acc, k) {
+        True -> do_object_list(rest, acc)
+        False -> {
+          let values = list.key_filter(entries, k)
+          do_object_list(rest, dict.insert(acc, k, dynamic.from(values)))
+        }
+      }
+    }
+  }
+}
+
+fn failure(
+  expected: String,
+  found: String,
+  path: List(String),
+) -> Result(t, DecodeErrors) {
+  Error([DecodeError(expected, found, path)])
+}
+
+fn missing_field(long_name: String) {
+  failure("field", "nothing", ["--" <> long_name])
 }
