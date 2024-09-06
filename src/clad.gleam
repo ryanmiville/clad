@@ -347,6 +347,13 @@ pub fn bool_with_default(
   flag_with_default(long_name, short_name, dynamic.bool, default, next)
 }
 
+/// A decoder that decodes List arguments.
+/// # Examples
+/// ```gleam
+/// // data: ["--flavor", "vanilla", "--flavor", "chocolate"]
+/// use flavors <- clad.list(long_name: "flavor", short_name: "f", of: dynamic.string)
+/// // -> ["vanilla", "chocolate"]
+/// ```
 pub fn list(
   long_name long_name: String,
   short_name short_name: String,
