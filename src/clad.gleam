@@ -140,7 +140,7 @@ import gleam/dynamic.{
 import gleam/float
 import gleam/int
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{None, Some}
 import gleam/result
 
 /// Run a decoder on a list of command line arguments, decoding the value if it
@@ -441,19 +441,34 @@ fn do_flag_list(
     case ln, sn {
       Ok(Some(a)), Ok(Some(b)) -> Ok(list.append(a, b))
       Ok(Some(a)), Ok(None) | Ok(None), Ok(Some(a)) -> Ok(a)
-      Ok(None), Ok(None) -> missing_field(long_name)
+      Ok(None), Ok(None) -> missing_field_error(long_name)
       Error(e1), Error(e2) -> Error(list.append(e1, e2))
       Error(e), _ | _, Error(e) -> Error(e)
     }
   }
 }
 
-// pub fn toggle(
-//   long_name long_name: String,
-//   short_name short_name: String,
-// ) -> Decoder(Bool) {
-//   todo
-// }
+pub fn toggle(
+  long_name long_name: String,
+  short_name short_name: String,
+) -> Decoder(Bool) {
+  arg_with_default(long_name, short_name, dynamic.bool, False)
+}
+
+pub fn arg_with_default(
+  long_name long_name: String,
+  short_name short_name: String,
+  using decoder: Decoder(t),
+  default default: t,
+) {
+  fn(data) {
+    let decoder = arg(long_name, short_name, dynamic.optional(decoder))
+    case decoder(data) {
+      Ok(value) -> Ok(option.unwrap(value, default))
+      Error(e) -> Error(e)
+    }
+  }
+}
 
 pub fn arg(
   long_name long_name: String,
@@ -473,7 +488,9 @@ pub fn arg(
       Ok(None), Ok(Some([a])) -> do_single(short_name, decoder)(a)
       Ok(Some(a)), Ok(None) -> do_list(long_name, decoder)(dynamic.from(a))
       Ok(None), Ok(Some(a)) -> do_list(short_name, decoder)(dynamic.from(a))
-      Ok(None), Ok(None) -> missing_field(long_name)
+      Ok(None), Ok(None) ->
+        do_single(long_name, decoder)(dynamic.from(None))
+        |> result.replace_error(missing_field(long_name))
       Error(e1), Error(e2) -> Error(list.append(e1, e2))
       Error(e), _ | _, Error(e) -> Error(e)
     }
@@ -579,6 +596,10 @@ fn failure(
   Error([DecodeError(expected, found, path)])
 }
 
-fn missing_field(long_name: String) {
+fn missing_field_error(long_name: String) {
   failure("field", "nothing", ["--" <> long_name])
+}
+
+fn missing_field(name: String) {
+  [DecodeError("field", "nothing", [name])]
 }

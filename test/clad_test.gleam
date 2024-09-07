@@ -1,6 +1,7 @@
 import clad
 import clad/internal/args
 import gleam/dynamic.{DecodeError}
+import gleam/option.{None, Some}
 import gleeunit
 import gleeunit/should
 
@@ -249,6 +250,10 @@ pub fn arg_test() {
   |> clad.decode(["-f", "hello"])
   |> should.equal(Ok("hello"))
 
+  clad.arg("foo", "f", dynamic.string)
+  |> clad.decode([])
+  |> should.equal(Error([DecodeError("field", "nothing", ["--foo"])]))
+
   clad.arg("foo", "f", dynamic.list(dynamic.string))
   |> clad.decode(["-f", "hello", "--foo", "goodbye"])
   |> should.equal(Ok(["goodbye", "hello"]))
@@ -264,4 +269,34 @@ pub fn arg_test() {
   clad.arg("foo", "f", dynamic.list(dynamic.string))
   |> clad.decode(["-f", "hello"])
   |> should.equal(Ok(["hello"]))
+
+  clad.arg("foo", "f", dynamic.optional(dynamic.string))
+  |> clad.decode(["-f", "hello"])
+  |> should.equal(Ok(Some("hello")))
+
+  clad.arg("foo", "f", dynamic.optional(dynamic.string))
+  |> clad.decode([])
+  |> should.equal(Ok(None))
+}
+
+pub fn toggle_test() {
+  clad.toggle("foo", "f")
+  |> clad.decode(["--foo"])
+  |> should.equal(Ok(True))
+
+  clad.toggle("foo", "f")
+  |> clad.decode([])
+  |> should.equal(Ok(False))
+
+  clad.toggle("foo", "f")
+  |> clad.decode(["--foo", "true"])
+  |> should.equal(Ok(True))
+
+  clad.toggle("foo", "f")
+  |> clad.decode(["--foo", "false"])
+  |> should.equal(Ok(False))
+
+  clad.toggle("foo", "f")
+  |> clad.decode(["--foo", "bar"])
+  |> should.equal(Error([DecodeError("Bool", "String", ["--foo"])]))
 }
