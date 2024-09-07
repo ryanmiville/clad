@@ -202,13 +202,13 @@ fn prepare_arguments(
 /// use name <- clad.string(long_name: "name", short_name: "n")
 /// // -> "Lucy"
 /// ```
-pub fn string(
-  long_name long_name: String,
-  short_name short_name: String,
-  then next: fn(String) -> Decoder(b),
-) -> Decoder(b) {
-  flag(long_name, short_name, dynamic.string, next)
-}
+// pub fn string(
+//   long_name long_name: String,
+//   short_name short_name: String,
+//   then next: fn(String) -> Decoder(b),
+// ) -> Decoder(b) {
+//   flag(long_name, short_name, dynamic.string, next)
+// }
 
 /// A decoder that decodes String arguments. Assigns a default value if the
 /// argument is missing.
@@ -222,14 +222,14 @@ pub fn string(
 /// )
 /// // -> "Lucy"
 /// ```
-pub fn string_with_default(
-  long_name long_name: String,
-  short_name short_name: String,
-  default default: String,
-  then next: fn(String) -> Decoder(b),
-) -> Decoder(b) {
-  flag_with_default(long_name, short_name, dynamic.string, default, next)
-}
+// pub fn string_with_default(
+//   long_name long_name: String,
+//   short_name short_name: String,
+//   default default: String,
+//   then next: fn(String) -> Decoder(b),
+// ) -> Decoder(b) {
+//   flag_with_default(long_name, short_name, dynamic.string, default, next)
+// }
 
 /// A decoder that decodes Int arguments.
 /// # Examples
@@ -238,13 +238,13 @@ pub fn string_with_default(
 /// use count <- clad.int(long_name: "count", short_name: "c")
 /// // -> 2
 /// ```
-pub fn int(
-  long_name long_name: String,
-  short_name short_name: String,
-  then next: fn(Int) -> Decoder(b),
-) -> Decoder(b) {
-  flag(long_name, short_name, dynamic.int, next)
-}
+// pub fn int(
+//   long_name long_name: String,
+//   short_name short_name: String,
+//   then next: fn(Int) -> Decoder(b),
+// ) -> Decoder(b) {
+//   flag(long_name, short_name, dynamic.int, next)
+// }
 
 /// A decoder that decodes Int arguments. Assigns a default value if the
 /// argument is missing.
@@ -258,14 +258,14 @@ pub fn int(
 /// )
 /// // -> 2
 /// ```
-pub fn int_with_default(
-  long_name long_name: String,
-  short_name short_name: String,
-  default default: Int,
-  then next: fn(Int) -> Decoder(b),
-) -> Decoder(b) {
-  flag_with_default(long_name, short_name, dynamic.int, default, next)
-}
+// pub fn int_with_default(
+//   long_name long_name: String,
+//   short_name short_name: String,
+//   default default: Int,
+//   then next: fn(Int) -> Decoder(b),
+// ) -> Decoder(b) {
+//   flag_with_default(long_name, short_name, dynamic.int, default, next)
+// }
 
 /// A decoder that decodes Float arguments.
 /// # Examples
@@ -274,13 +274,13 @@ pub fn int_with_default(
 /// use price <- clad.float(long_name: "price", short_name: "p")
 /// // -> 2.5
 /// ```
-pub fn float(
-  long_name long_name: String,
-  short_name short_name: String,
-  then next: fn(Float) -> Decoder(b),
-) -> Decoder(b) {
-  flag(long_name, short_name, dynamic.float, next)
-}
+// pub fn float(
+//   long_name long_name: String,
+//   short_name short_name: String,
+//   then next: fn(Float) -> Decoder(b),
+// ) -> Decoder(b) {
+//   flag(long_name, short_name, dynamic.float, next)
+// }
 
 /// A decoder that decodes Float arguments. Assigns a default value if the
 /// argument is missing.
@@ -294,14 +294,14 @@ pub fn float(
 /// )
 /// // -> 2.5
 /// ```
-pub fn float_with_default(
-  long_name long_name: String,
-  short_name short_name: String,
-  default default: Float,
-  then next: fn(Float) -> Decoder(b),
-) -> Decoder(b) {
-  flag_with_default(long_name, short_name, dynamic.float, default, next)
-}
+// pub fn float_with_default(
+//   long_name long_name: String,
+//   short_name short_name: String,
+//   default default: Float,
+//   then next: fn(Float) -> Decoder(b),
+// ) -> Decoder(b) {
+//   flag_with_default(long_name, short_name, dynamic.float, default, next)
+// }
 
 /// A decoder that decodes Bool arguments.
 /// Missing Bool arguments default to `False`.
@@ -316,13 +316,13 @@ pub fn float_with_default(
 /// use verbose <- clad.bool(long_name: "verbose", short_name: "v")
 /// // -> False
 /// ```
-pub fn bool(
-  long_name long_name: String,
-  short_name short_name: String,
-  then next: fn(Bool) -> Decoder(b),
-) -> Decoder(b) {
-  flag_with_default(long_name, short_name, dynamic.bool, False, next)
-}
+// pub fn bool(
+//   long_name long_name: String,
+//   short_name short_name: String,
+//   then next: fn(Bool) -> Decoder(b),
+// ) -> Decoder(b) {
+//   flag_with_default(long_name, short_name, dynamic.bool, False, next)
+// }
 
 /// A decoder that decodes Bool arguments. Assigns a default value if the
 /// argument is missing.
@@ -338,14 +338,14 @@ pub fn bool(
 /// )
 /// // -> True
 /// ```
-pub fn bool_with_default(
-  long_name long_name: String,
-  short_name short_name: String,
-  default default: Bool,
-  then next: fn(Bool) -> Decoder(b),
-) -> Decoder(b) {
-  flag_with_default(long_name, short_name, dynamic.bool, default, next)
-}
+// pub fn bool_with_default(
+//   long_name long_name: String,
+//   short_name short_name: String,
+//   default default: Bool,
+//   then next: fn(Bool) -> Decoder(b),
+// ) -> Decoder(b) {
+//   flag_with_default(long_name, short_name, dynamic.bool, default, next)
+// }
 
 /// A decoder that decodes List arguments.
 /// # Examples
@@ -354,18 +354,18 @@ pub fn bool_with_default(
 /// use flavors <- clad.list(long_name: "flavor", short_name: "f", of: dynamic.string)
 /// // -> ["vanilla", "chocolate"]
 /// ```
-pub fn list(
-  long_name long_name: String,
-  short_name short_name: String,
-  of inner: Decoder(t),
-  then next: fn(List(t)) -> Decoder(b),
-) -> Decoder(b) {
-  fn(data) {
-    let decoder = do_flag_list(long_name, short_name, inner)
-    use l <- result.try(decoder(data))
-    next(l)(data)
-  }
-}
+// pub fn list(
+//   long_name long_name: String,
+//   short_name short_name: String,
+//   of inner: Decoder(t),
+//   then next: fn(List(t)) -> Decoder(b),
+// ) -> Decoder(b) {
+//   fn(data) {
+//     let decoder = do_flag_list(long_name, short_name, inner)
+//     use l <- result.try(decoder(data))
+//     next(l)(data)
+//   }
+// }
 
 /// Creates a decoder which directly returns the provided value.
 /// Used to collect decoded values into a record.
@@ -380,94 +380,91 @@ pub fn decoded(value: a) -> Decoder(a) {
   fn(_) { Ok(value) }
 }
 
-fn flag(
-  long_name long_name: String,
-  short_name short_name: String,
-  of decoder: Decoder(a),
-  then next: fn(a) -> Decoder(b),
-) -> Decoder(b) {
-  fn(data) {
-    let first = do_flag(long_name, short_name, decoder)
-    use a <- result.try(first(data))
-    next(a)(data)
-  }
-}
+// fn flag(
+//   long_name long_name: String,
+//   short_name short_name: String,
+//   of decoder: Decoder(a),
+//   then next: fn(a) -> Decoder(b),
+// ) -> Decoder(b) {
+//   fn(data) {
+//     let first = do_flag(long_name, short_name, decoder)
+//     use a <- result.try(first(data))
+//     next(a)(data)
+//   }
+// }
 
-fn flag_with_default(
-  long_name long_name: String,
-  short_name short_name: String,
-  of decoder: Decoder(a),
-  default default: a,
-  then next: fn(a) -> Decoder(b),
-) -> Decoder(b) {
-  fn(data) {
-    let first = do_flag(long_name, short_name, decoder) |> with_default(default)
-    use a <- result.try(first(data))
-    next(a)(data)
-  }
-}
+// fn flag_with_default(
+//   long_name long_name: String,
+//   short_name short_name: String,
+//   of decoder: Decoder(a),
+//   default default: a,
+//   then next: fn(a) -> Decoder(b),
+// ) -> Decoder(b) {
+//   fn(data) {
+//     let first = do_flag(long_name, short_name, decoder) |> with_default(default)
+//     use a <- result.try(first(data))
+//     next(a)(data)
+//   }
+// }
 
-fn do_flag(
-  long_name long_name: String,
-  short_name short_name: String,
-  of decoder: Decoder(t),
-) -> Decoder(t) {
-  fn(data) {
-    case do_flag_list(long_name, short_name, decoder)(data) {
-      Ok([a]) -> Ok(a)
-      Ok([a, ..]) ->
-        Error([
-          DecodeError(dynamic.classify(dynamic.from(a)), "List", [
-            "--" <> long_name,
-          ]),
-        ])
-      Error([DecodeError(_, _, [n, "*"]) as err]) ->
-        Error([DecodeError(..err, path: [n])])
-      Error(e) -> Error(e)
-      Ok([]) -> panic as "decoded empty list"
-    }
-  }
-}
+// fn do_flag(
+//   long_name long_name: String,
+//   short_name short_name: String,
+//   of decoder: Decoder(t),
+// ) -> Decoder(t) {
+//   fn(data) {
+//     case do_flag_list(long_name, short_name, decoder)(data) {
+//       Ok([a]) -> Ok(a)
+//       Ok([a, ..]) ->
+//         Error([
+//           DecodeError(dynamic.classify(dynamic.from(a)), "List", [
+//             "--" <> long_name,
+//           ]),
+//         ])
+//       Error([DecodeError(_, _, [n, "*"]) as err]) ->
+//         Error([DecodeError(..err, path: [n])])
+//       Error(e) -> Error(e)
+//       Ok([]) -> panic as "decoded empty list"
+//     }
+//   }
+// }
 
-fn do_flag_list(
-  long_name long_name: String,
-  short_name short_name: String,
-  inner decoder: Decoder(t),
-) -> Decoder(List(t)) {
-  fn(data) {
-    let ln = long_name_list(long_name, decoder)(data)
-    let sn = short_name_list(short_name, decoder)(data)
+// fn do_flag_list(
+//   long_name long_name: String,
+//   short_name short_name: String,
+//   inner decoder: Decoder(t),
+// ) -> Decoder(List(t)) {
+//   fn(data) {
+//     let ln = long_name_list(long_name, decoder)(data)
+//     let sn = short_name_list(short_name, decoder)(data)
 
-    case ln, sn {
-      Ok(Some(a)), Ok(Some(b)) -> Ok(list.append(a, b))
-      Ok(Some(a)), Ok(None) | Ok(None), Ok(Some(a)) -> Ok(a)
-      Ok(None), Ok(None) -> missing_field_error(long_name)
-      Error(e1), Error(e2) -> Error(list.append(e1, e2))
-      Error(e), _ | _, Error(e) -> Error(e)
-    }
-  }
-}
+//     case ln, sn {
+//       Ok(Some(a)), Ok(Some(b)) -> Ok(list.append(a, b))
+//       Ok(Some(a)), Ok(None) | Ok(None), Ok(Some(a)) -> Ok(a)
+//       Ok(None), Ok(None) -> missing_field_error(long_name)
+//       Error(e1), Error(e2) -> Error(list.append(e1, e2))
+//       Error(e), _ | _, Error(e) -> Error(e)
+//     }
+//   }
+// }
 
 pub fn toggle(
   long_name long_name: String,
   short_name short_name: String,
-) -> Decoder(Bool) {
-  arg_with_default(long_name, short_name, dynamic.bool, False)
+  then next: fn(Bool) -> Decoder(a),
+) -> Decoder(a) {
+  arg_with_default(long_name, short_name, dynamic.bool, False, next)
 }
 
 pub fn arg_with_default(
   long_name long_name: String,
   short_name short_name: String,
-  using decoder: Decoder(t),
-  default default: t,
+  of decoder: Decoder(a),
+  default default: a,
+  then next: fn(a) -> Decoder(b),
 ) {
-  fn(data) {
-    let decoder = arg(long_name, short_name, dynamic.optional(decoder))
-    case decoder(data) {
-      Ok(value) -> Ok(option.unwrap(value, default))
-      Error(e) -> Error(e)
-    }
-  }
+  use res <- arg(long_name, short_name, dynamic.optional(decoder))
+  next(option.unwrap(res, default))
 }
 
 type Arg {
@@ -493,21 +490,40 @@ type ArgResults {
 pub fn arg(
   long_name long_name: String,
   short_name short_name: String,
-  using decoder: Decoder(t),
-) -> Decoder(t) {
+  of decoder: Decoder(a),
+  then next: fn(a) -> Decoder(b),
+) -> Decoder(b) {
   fn(data) {
     let long_name = "--" <> long_name
     let short_name = "-" <> short_name
-    do_arg(Arg(long_name, short_name), decoder)(data)
+    let first = do_arg(Arg(long_name, short_name), decoder)
+    use a <- result.try(first(data))
+    next(a)(data)
   }
 }
 
-pub fn short_name(short_name: String, decoder: Decoder(t)) {
-  do_arg(ShortName("-" <> short_name), decoder)
+pub fn short_name(
+  short_name: String,
+  decoder: Decoder(a),
+  next: fn(a) -> Decoder(b),
+) {
+  fn(data) {
+    let first = do_arg(ShortName("-" <> short_name), decoder)
+    use a <- result.try(first(data))
+    next(a)(data)
+  }
 }
 
-pub fn long_name(long_name: String, decoder: Decoder(t)) {
-  do_arg(LongName("--" <> long_name), decoder)
+pub fn long_name(
+  long_name: String,
+  decoder: Decoder(a),
+  next: fn(a) -> Decoder(b),
+) {
+  fn(data) {
+    let first = do_arg(LongName("--" <> long_name), decoder)
+    use a <- result.try(first(data))
+    next(a)(data)
+  }
 }
 
 fn do_arg(arg: Arg, using decoder: Decoder(t)) -> Decoder(t) {
@@ -602,23 +618,23 @@ fn do_list(name: String, decoder: Decoder(t)) -> Decoder(t) {
   }
 }
 
-fn with_default(decoder: Decoder(t), default: t) -> Decoder(t) {
-  fn(data) {
-    case decoder(data) {
-      Ok(decoded) -> Ok(decoded)
-      Error([DecodeError("field", "nothing", [_])]) -> Ok(default)
-      errors -> errors
-    }
-  }
-}
+// fn with_default(decoder: Decoder(t), default: t) -> Decoder(t) {
+//   fn(data) {
+//     case decoder(data) {
+//       Ok(decoded) -> Ok(decoded)
+//       Error([DecodeError("field", "nothing", [_])]) -> Ok(default)
+//       errors -> errors
+//     }
+//   }
+// }
 
-fn long_name_list(long_name: String, decoder: Decoder(t)) {
-  dynamic.optional_field("--" <> long_name, dynamic.list(decoder))
-}
+// fn long_name_list(long_name: String, decoder: Decoder(t)) {
+//   dynamic.optional_field("--" <> long_name, dynamic.list(decoder))
+// }
 
-fn short_name_list(short_name: String, decoder: Decoder(t)) {
-  dynamic.optional_field("-" <> short_name, dynamic.list(decoder))
-}
+// fn short_name_list(short_name: String, decoder: Decoder(t)) {
+//   dynamic.optional_field("-" <> short_name, dynamic.list(decoder))
+// }
 
 fn fail(expected: String, found: String) {
   Error([DecodeError(expected, found, [])])
@@ -671,17 +687,17 @@ fn do_object_list(
   }
 }
 
-fn failure(
-  expected: String,
-  found: String,
-  path: List(String),
-) -> Result(t, DecodeErrors) {
-  Error([DecodeError(expected, found, path)])
-}
+// fn failure(
+//   expected: String,
+//   found: String,
+//   path: List(String),
+// ) -> Result(t, DecodeErrors) {
+//   Error([DecodeError(expected, found, path)])
+// }
 
-fn missing_field_error(long_name: String) {
-  failure("field", "nothing", ["--" <> long_name])
-}
+// fn missing_field_error(long_name: String) {
+//   failure("field", "nothing", ["--" <> long_name])
+// }
 
 fn missing_field(name: String) {
   [DecodeError("field", "nothing", [name])]

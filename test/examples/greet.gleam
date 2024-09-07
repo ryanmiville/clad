@@ -1,5 +1,6 @@
 import argv
 import clad
+import gleam/dynamic
 import gleam/io
 import gleam/list
 import gleam/string
@@ -17,13 +18,14 @@ fn greet(args: Args) {
 }
 
 fn args_decoder() {
-  use name <- clad.string(long_name: "name", short_name: "n")
-  use count <- clad.int_with_default(
+  use name <- clad.arg(long_name: "name", short_name: "n", of: dynamic.string)
+  use count <- clad.arg_with_default(
     long_name: "count",
     short_name: "c",
+    of: dynamic.int,
     default: 1,
   )
-  use scream <- clad.bool(long_name: "scream", short_name: "s")
+  use scream <- clad.toggle(long_name: "scream", short_name: "s")
   clad.decoded(Args(name:, count:, scream:))
 }
 
