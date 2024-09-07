@@ -140,7 +140,7 @@ import gleam/dynamic.{
 import gleam/float
 import gleam/int
 import gleam/list
-import gleam/option.{None, Some}
+import gleam/option.{type Option, None, Some}
 import gleam/result
 
 /// Run a decoder on a list of command line arguments, decoding the value if it
@@ -444,6 +444,60 @@ fn do_flag_list(
       Ok(None), Ok(None) -> missing_field(long_name)
       Error(e1), Error(e2) -> Error(list.append(e1, e2))
       Error(e), _ | _, Error(e) -> Error(e)
+    }
+  }
+}
+
+// pub fn toggle(
+//   long_name long_name: String,
+//   short_name short_name: String,
+// ) -> Decoder(Bool) {
+//   todo
+// }
+
+pub fn arg(
+  long_name long_name: String,
+  short_name short_name: String,
+  using decoder: Decoder(t),
+) -> Decoder(t) {
+  fn(data) {
+    let long_name = "--" <> long_name
+    let short_name = "-" <> short_name
+    let ln = dynamic.optional_field(long_name, dynamic.shallow_list)(data)
+    let sn = dynamic.optional_field(short_name, dynamic.shallow_list)(data)
+
+    case ln, sn {
+      Ok(Some(a)), Ok(Some(b)) ->
+        do_list(long_name, decoder)(dynamic.from(list.append(a, b)))
+      Ok(Some([a])), Ok(None) -> do_single(long_name, decoder)(a)
+      Ok(None), Ok(Some([a])) -> do_single(short_name, decoder)(a)
+      Ok(Some(a)), Ok(None) -> do_list(long_name, decoder)(dynamic.from(a))
+      Ok(None), Ok(Some(a)) -> do_list(short_name, decoder)(dynamic.from(a))
+      Ok(None), Ok(None) -> missing_field(long_name)
+      Error(e1), Error(e2) -> Error(list.append(e1, e2))
+      Error(e), _ | _, Error(e) -> Error(e)
+    }
+  }
+}
+
+fn do_single(name: String, decoder: Decoder(t)) -> Decoder(t) {
+  fn(data) {
+    use first_error <- result.try_recover(decoder(data))
+    let decoder = do_list(name, decoder)
+    use second_error <- result.map_error(decoder(dynamic.from([data])))
+    case first_error {
+      [DecodeError(..) as e] -> [DecodeError(..e, path: [name, ..e.path])]
+      _ -> second_error
+    }
+  }
+}
+
+fn do_list(name: String, decoder: Decoder(t)) -> Decoder(t) {
+  fn(data) {
+    use error <- result.map_error(decoder(data))
+    case error {
+      [DecodeError(..) as e] -> [DecodeError(..e, path: [name, ..e.path])]
+      _ -> error
     }
   }
 }

@@ -239,3 +239,29 @@ pub fn split_equals_test() {
   args.split_equals(args)
   |> should.equal(["--foo", "hello=world", "--bar"])
 }
+
+pub fn arg_test() {
+  clad.arg("foo", "f", dynamic.string)
+  |> clad.decode(["--foo", "hello"])
+  |> should.equal(Ok("hello"))
+
+  clad.arg("foo", "f", dynamic.string)
+  |> clad.decode(["-f", "hello"])
+  |> should.equal(Ok("hello"))
+
+  clad.arg("foo", "f", dynamic.list(dynamic.string))
+  |> clad.decode(["-f", "hello", "--foo", "goodbye"])
+  |> should.equal(Ok(["goodbye", "hello"]))
+
+  clad.arg("foo", "f", dynamic.string)
+  |> clad.decode(["-f", "hello", "--foo", "goodbye"])
+  |> should.equal(Error([DecodeError("String", "List", ["--foo"])]))
+
+  clad.arg("foo", "f", dynamic.list(dynamic.string))
+  |> clad.decode(["-f", "1", "--foo", "hello"])
+  |> should.equal(Error([DecodeError("String", "Int", ["--foo", "*"])]))
+
+  clad.arg("foo", "f", dynamic.list(dynamic.string))
+  |> clad.decode(["-f", "hello"])
+  |> should.equal(Ok(["hello"]))
+}
