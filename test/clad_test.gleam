@@ -279,6 +279,30 @@ pub fn arg_test() {
   |> should.equal(Ok(None))
 }
 
+pub fn short_name_test() {
+  clad.short_name("f", dynamic.string)
+  |> clad.decode(["-f", "hello"])
+  |> should.equal(Ok("hello"))
+  clad.short_name("f", dynamic.string)
+  |> clad.decode(["-f", "123"])
+  |> should.equal(Error([DecodeError("String", "Int", ["-f"])]))
+  clad.short_name("f", dynamic.string)
+  |> clad.decode([])
+  |> should.equal(Error([DecodeError("field", "nothing", ["-f"])]))
+}
+
+pub fn long_name_test() {
+  clad.long_name("foo", dynamic.string)
+  |> clad.decode(["--foo", "hello"])
+  |> should.equal(Ok("hello"))
+  clad.long_name("foo", dynamic.string)
+  |> clad.decode(["--foo", "123"])
+  |> should.equal(Error([DecodeError("String", "Int", ["--foo"])]))
+  clad.long_name("foo", dynamic.string)
+  |> clad.decode([])
+  |> should.equal(Error([DecodeError("field", "nothing", ["--foo"])]))
+}
+
 pub fn toggle_test() {
   clad.toggle("foo", "f")
   |> clad.decode(["--foo"])

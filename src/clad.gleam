@@ -140,7 +140,7 @@ import gleam/dynamic.{
 import gleam/float
 import gleam/int
 import gleam/list
-import gleam/option.{None, Some}
+import gleam/option.{type Option, None, Some}
 import gleam/result
 
 /// Run a decoder on a list of command line arguments, decoding the value if it
@@ -470,6 +470,26 @@ pub fn arg_with_default(
   }
 }
 
+type Arg {
+  Arg(long_name: String, short_name: String)
+  LongName(String)
+  ShortName(String)
+}
+
+type DecodeResult =
+  Result(Option(List(Dynamic)), List(DecodeError))
+
+type ArgResults {
+  ArgResults(
+    long_name: String,
+    short_name: String,
+    long_result: DecodeResult,
+    short_result: DecodeResult,
+  )
+  LongNameResults(long_name: String, long_result: DecodeResult)
+  ShortNameResults(short_name: String, short_result: DecodeResult)
+}
+
 pub fn arg(
   long_name long_name: String,
   short_name short_name: String,
@@ -478,22 +498,85 @@ pub fn arg(
   fn(data) {
     let long_name = "--" <> long_name
     let short_name = "-" <> short_name
-    let ln = dynamic.optional_field(long_name, dynamic.shallow_list)(data)
-    let sn = dynamic.optional_field(short_name, dynamic.shallow_list)(data)
+    do_arg(Arg(long_name, short_name), decoder)(data)
+  }
+}
 
-    case ln, sn {
-      Ok(Some(a)), Ok(Some(b)) ->
-        do_list(long_name, decoder)(dynamic.from(list.append(a, b)))
-      Ok(Some([a])), Ok(None) -> do_single(long_name, decoder)(a)
-      Ok(None), Ok(Some([a])) -> do_single(short_name, decoder)(a)
-      Ok(Some(a)), Ok(None) -> do_list(long_name, decoder)(dynamic.from(a))
-      Ok(None), Ok(Some(a)) -> do_list(short_name, decoder)(dynamic.from(a))
-      Ok(None), Ok(None) ->
-        do_single(long_name, decoder)(dynamic.from(None))
-        |> result.replace_error(missing_field(long_name))
-      Error(e1), Error(e2) -> Error(list.append(e1, e2))
-      Error(e), _ | _, Error(e) -> Error(e)
+pub fn short_name(short_name: String, decoder: Decoder(t)) {
+  do_arg(ShortName("-" <> short_name), decoder)
+}
+
+pub fn long_name(long_name: String, decoder: Decoder(t)) {
+  do_arg(LongName("--" <> long_name), decoder)
+}
+
+fn do_arg(arg: Arg, using decoder: Decoder(t)) -> Decoder(t) {
+  fn(data) {
+    let arg_res = case arg {
+      Arg(long_name, short_name) -> {
+        ArgResults(
+          long_name,
+          short_name,
+          dynamic.optional_field(long_name, dynamic.shallow_list)(data),
+          dynamic.optional_field(short_name, dynamic.shallow_list)(data),
+        )
+      }
+      LongName(name) -> {
+        LongNameResults(
+          name,
+          dynamic.optional_field(name, dynamic.shallow_list)(data),
+        )
+      }
+      ShortName(name) -> {
+        ShortNameResults(
+          name,
+          dynamic.optional_field(name, dynamic.shallow_list)(data),
+        )
+      }
     }
+
+    case arg_res {
+      ArgResults(l, s, lr, sr) -> do_arg_results(l, s, lr, sr, decoder)
+      LongNameResults(n, r) -> do_single_name_results(n, r, decoder)
+      ShortNameResults(n, r) -> do_single_name_results(n, r, decoder)
+    }
+  }
+}
+
+fn do_arg_results(
+  long_name: String,
+  short_name: String,
+  long_result: DecodeResult,
+  short_result: DecodeResult,
+  decoder: Decoder(t),
+) {
+  case long_result, short_result {
+    Ok(Some(a)), Ok(Some(b)) ->
+      do_list(long_name, decoder)(dynamic.from(list.append(a, b)))
+    Ok(Some([a])), Ok(None) -> do_single(long_name, decoder)(a)
+    Ok(None), Ok(Some([a])) -> do_single(short_name, decoder)(a)
+    Ok(Some(a)), Ok(None) -> do_list(long_name, decoder)(dynamic.from(a))
+    Ok(None), Ok(Some(a)) -> do_list(short_name, decoder)(dynamic.from(a))
+    Ok(None), Ok(None) ->
+      do_single(long_name, decoder)(dynamic.from(None))
+      |> result.replace_error(missing_field(long_name))
+    Error(e1), Error(e2) -> Error(list.append(e1, e2))
+    Error(e), _ | _, Error(e) -> Error(e)
+  }
+}
+
+fn do_single_name_results(
+  name: String,
+  decode_result: DecodeResult,
+  decoder: Decoder(t),
+) {
+  case decode_result {
+    Ok(Some([a])) -> do_single(name, decoder)(a)
+    Ok(Some(a)) -> do_list(name, decoder)(dynamic.from(a))
+    Ok(None) ->
+      do_single(name, decoder)(dynamic.from(None))
+      |> result.replace_error(missing_field(name))
+    Error(e) -> Error(e)
   }
 }
 
