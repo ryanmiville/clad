@@ -293,8 +293,7 @@ pub fn arg_with_default(
 
 type Arg {
   Arg(long_name: String, short_name: String)
-  LongName(String)
-  ShortName(String)
+  Name(String)
 }
 
 type DecodeResult =
@@ -307,8 +306,7 @@ type ArgResults {
     long_result: DecodeResult,
     short_result: DecodeResult,
   )
-  LongNameResults(long_name: String, long_result: DecodeResult)
-  ShortNameResults(short_name: String, short_result: DecodeResult)
+  NameResults(name: String, result: DecodeResult)
 }
 
 /// Decode an argument by either its long name (`--name`) or short name (`-n`).
@@ -364,7 +362,7 @@ pub fn short_name(
   next: fn(a) -> Decoder(b),
 ) {
   fn(data) {
-    let first = do_arg(ShortName("-" <> short_name), decoder)
+    let first = do_arg(Name("-" <> short_name), decoder)
     use a <- result.try(first(data))
     next(a)(data)
   }
@@ -384,7 +382,7 @@ pub fn long_name(
   next: fn(a) -> Decoder(b),
 ) {
   fn(data) {
-    let first = do_arg(LongName("--" <> long_name), decoder)
+    let first = do_arg(Name("--" <> long_name), decoder)
     use a <- result.try(first(data))
     next(a)(data)
   }
@@ -401,14 +399,8 @@ fn do_arg(arg: Arg, using decoder: Decoder(t)) -> Decoder(t) {
           dynamic.optional_field(short_name, dynamic.shallow_list)(data),
         )
       }
-      LongName(name) -> {
-        LongNameResults(
-          name,
-          dynamic.optional_field(name, dynamic.shallow_list)(data),
-        )
-      }
-      ShortName(name) -> {
-        ShortNameResults(
+      Name(name) -> {
+        NameResults(
           name,
           dynamic.optional_field(name, dynamic.shallow_list)(data),
         )
@@ -417,8 +409,7 @@ fn do_arg(arg: Arg, using decoder: Decoder(t)) -> Decoder(t) {
 
     case arg_res {
       ArgResults(l, s, lr, sr) -> do_arg_results(l, s, lr, sr, decoder)
-      LongNameResults(n, r) -> do_single_name_results(n, r, decoder)
-      ShortNameResults(n, r) -> do_single_name_results(n, r, decoder)
+      NameResults(n, r) -> do_single_name_results(n, r, decoder)
     }
   }
 }
@@ -532,18 +523,6 @@ fn do_object_list(
     }
   }
 }
-
-// fn failure(
-//   expected: String,
-//   found: String,
-//   path: List(String),
-// ) -> Result(t, DecodeErrors) {
-//   Error([DecodeError(expected, found, path)])
-// }
-
-// fn missing_field_error(long_name: String) {
-//   failure("field", "nothing", ["--" <> long_name])
-// }
 
 fn missing_field(name: String) {
   [DecodeError("field", "nothing", [name])]

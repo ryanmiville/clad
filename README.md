@@ -24,72 +24,73 @@ This program is in the [examples directory](https://github.com/ryanmiville/clad/
 ```gleam
 import argv
 import clad
+import gleam/bool
 import gleam/dynamic
+import gleam/int
 import gleam/io
-import gleam/list
 import gleam/string
 
-type Args {
-  Args(name: String, count: Int, scream: Bool)
+type Order {
+  Order(flavors: List(String), scoops: Int, cone: Bool)
 }
 
-fn greet(args: Args) {
-  let greeting = case args.scream {
-    True -> "HEY " <> string.uppercase(args.name) <> "!"
-    False -> "Hello, " <> args.name <> "."
-  }
-  list.repeat(greeting, args.count) |> list.each(io.println)
-}
-
-fn args_decoder() {
-  use name <- clad.arg(long_name: "name", short_name: "n", of: dynamic.string)
-  use count <- clad.arg_with_default(
-    long_name: "count",
-    short_name: "c",
-    of: dynamic.int,
-    default: 1,
-  )
-  use scream <- clad.toggle(long_name: "scream", short_name: "s")
-  clad.decoded(Args(name:, count:, scream:))
+fn order_decoder() {
+  use flavors <- clad.arg("flavor", "f", dynamic.list(dynamic.string))
+  use scoops <- clad.arg_with_default("scoops", "s", dynamic.int, default: 1)
+  use cone <- clad.toggle("cone", "c")
+  clad.decoded(Order(flavors:, scoops:, cone:))
 }
 
 pub fn main() {
-  let args =
-    args_decoder()
+  let order =
+    order_decoder()
     |> clad.decode(argv.load().arguments)
 
-  case args {
-    Ok(args) -> greet(args)
+  case order {
+    Ok(order) -> take_order(order)
     _ ->
       io.println(
         "
 Options:
-  -n, --name <NAME>    Name of the person to greet
-  -c, --count <COUNT>  Number of times to greet [default: 1]
-  -s, --scream         Whether or not to scream greeting
+  -f, --flavor <FLAVOR>  Flavors of ice cream
+  -s, --scoops <SCOOPS>  Number of scoops per flavor [default: 1]
+  -c, --cone             Put ice cream in a cone
       ",
       )
   }
+}
+
+fn take_order(order: Order) {
+  let scoops = bool.guard(order.scoops == 1, " scoop", fn() { " scoops" })
+  let container = bool.guard(order.cone, "cone", fn() { "cup" })
+  let flavs = string.join(order.flavors, " and ")
+  io.println(
+    int.to_string(order.scoops)
+    <> scoops
+    <> " of "
+    <> flavs
+    <> " in a "
+    <> container
+    <> ", coming right up!",
+  )
 }
 ```
 
 Run the program
 
 ```sh
-❯ gleam run -m examples/greet -- -n Joe
-Hello, Joe.
-❯ gleam run -m examples/greet -- --name=Joe
-Hello, Joe.
-❯ gleam run -m examples/greet -- --name Joe --count 3 --scream
-HEY JOE!
-HEY JOE!
-HEY JOE!
-❯ gleam run -m examples/greet
+❯ gleam run -m examples/ice_cream -- -f vanilla
+1 scoop of vanilla in a cup, coming right up!
+❯ gleam run -m examples/ice_cream -- --flavor vanilla --flavor chocolate
+1 scoop of vanilla and chocolate in a cup, coming right up!
+❯ gleam run -m examples/ice_cream -- --flavor vanilla --flavor chocolate --scoops 2 --cone
+2 scoops of vanilla and chocolate in a cone, coming right up!
+❯ gleam run -m examples/ice_cream --
 
 Options:
-  -n, --name <NAME>    Name of the person to greet
-  -c, --count <COUNT>  Number of times to greet [default: 1]
-  -s, --scream         Whether or not to scream greeting
+  -f, --flavor <FLAVOR>  Flavors of ice cream
+  -s, --scoops <SCOOPS>  Number of scoops per flavor [default: 1]
+  -c, --cone             Put ice cream in a cone
 ```
 
 Further documentation can be found at <https://hexdocs.pm/clad>.
