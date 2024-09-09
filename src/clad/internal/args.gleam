@@ -1,5 +1,6 @@
 import gleam/bool
 import gleam/list
+import gleam/regex
 import gleam/string
 
 pub fn split_equals(arguments: List(String)) -> List(String) {

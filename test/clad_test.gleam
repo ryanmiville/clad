@@ -1,5 +1,7 @@
 import clad
 import clad/internal/args
+import gleam/dynamic.{DecodeError}
+import gleam/option.{None, Some}
 import gleeunit
 import gleeunit/should
 
@@ -8,93 +10,207 @@ pub fn main() {
 }
 
 type Options {
-  Options(foo: String, bar: Int, baz: Bool, qux: Float)
+  Options(foo: String, bar: Int, baz: Bool, qux: Float, names: List(String))
 }
 
 pub fn decode_test() {
-  clad.string(long_name: "foo", short_name: "f", then: clad.decoded)
+  clad.arg(
+    long_name: "foo",
+    short_name: "f",
+    of: dynamic.string,
+    then: clad.decoded,
+  )
   |> clad.decode(["-f", "hello"])
   |> should.equal(Ok("hello"))
 
-  clad.int(long_name: "bar", short_name: "b", then: clad.decoded)
+  clad.arg(
+    long_name: "bar",
+    short_name: "b",
+    of: dynamic.int,
+    then: clad.decoded,
+  )
   |> clad.decode(["-b", "1"])
   |> should.equal(Ok(1))
 
-  clad.bool(long_name: "baz", short_name: "z", then: clad.decoded)
+  clad.toggle(long_name: "baz", short_name: "z", then: clad.decoded)
   |> clad.decode(["-z"])
   |> should.equal(Ok(True))
 
-  clad.bool(long_name: "baz", short_name: "z", then: clad.decoded)
+  clad.toggle(long_name: "baz", short_name: "z", then: clad.decoded)
   |> clad.decode([])
   |> should.equal(Ok(False))
 
-  clad.float(long_name: "qux", short_name: "q", then: clad.decoded)
+  clad.arg(
+    long_name: "qux",
+    short_name: "q",
+    of: dynamic.float,
+    then: clad.decoded,
+  )
   |> clad.decode(["-q", "2.5"])
   |> should.equal(Ok(2.5))
 
-  clad.float(long_name: "qux", short_name: "q", then: clad.decoded)
+  clad.arg(
+    long_name: "qux",
+    short_name: "q",
+    of: dynamic.float,
+    then: clad.decoded,
+  )
   |> clad.decode([])
   |> should.be_error
 
-  clad.float_with_default(
+  clad.arg_with_default(
     long_name: "qux",
     short_name: "q",
+    of: dynamic.float,
     default: 0.0,
     then: clad.decoded,
   )
   |> clad.decode([])
   |> should.equal(Ok(0.0))
 
-  clad.float_with_default(
+  clad.arg_with_default(
     long_name: "qux",
     short_name: "q",
+    of: dynamic.float,
     default: 0.0,
     then: clad.decoded,
   )
   |> clad.decode(["-q", "2.5"])
   |> should.equal(Ok(2.5))
 
+  clad.arg(
+    long_name: "foo",
+    short_name: "f",
+    of: dynamic.list(dynamic.string),
+    then: clad.decoded,
+  )
+  |> clad.decode(["-f", "hello", "--foo", "world"])
+  |> should.equal(Ok(["world", "hello"]))
+
   let decoder = {
-    use foo <- clad.string(long_name: "foo", short_name: "f")
-    use bar <- clad.int(long_name: "bar", short_name: "b")
-    use baz <- clad.bool(long_name: "baz", short_name: "z")
-    use qux <- clad.float_with_default(
-      long_name: "qux",
-      short_name: "q",
-      default: 0.0,
-    )
-    clad.decoded(Options(foo:, bar:, baz:, qux:))
+    use foo <- clad.arg("foo", "f", dynamic.string)
+    use bar <- clad.arg("bar", "b", dynamic.int)
+    use baz <- clad.toggle("baz", "z")
+    use qux <- clad.arg_with_default("qux", "q", dynamic.float, 0.0)
+    use names <- clad.arg("name", "n", dynamic.list(dynamic.string))
+    clad.decoded(Options(foo:, bar:, baz:, qux:, names:))
   }
 
   // all fields set
-  let args = ["--foo", "hello", "-b", "1", "--baz", "-q", "2.5"]
+  let args = [
+    "--foo", "hello", "-b", "1", "--baz", "-q", "2.5", "-n", "Lucy", "-n", "Joe",
+  ]
   clad.decode(decoder, args)
-  |> should.equal(Ok(Options("hello", 1, True, 2.5)))
+  |> should.equal(Ok(Options("hello", 1, True, 2.5, ["Lucy", "Joe"])))
 
   // using '='
-  let args = ["--foo=hello", "-b=1", "--baz", "-q", "2.5"]
+  let args = ["--foo=hello", "-b=1", "--baz", "-q", "2.5", "-n", "Lucy"]
   clad.decode(decoder, args)
-  |> should.equal(Ok(Options("hello", 1, True, 2.5)))
+  |> should.equal(Ok(Options("hello", 1, True, 2.5, ["Lucy"])))
 
   // missing field with default value
-  let args = ["--foo", "hello", "--bar", "1", "--baz"]
+  let args = ["--foo", "hello", "--bar", "1", "--baz", "--name", "Lucy"]
   clad.decode(decoder, args)
-  |> should.equal(Ok(Options("hello", 1, True, 0.0)))
+  |> should.equal(Ok(Options("hello", 1, True, 0.0, ["Lucy"])))
 
   // missing flag field
-  let args = ["--foo", "hello", "--bar", "1"]
+  let args = ["--foo", "hello", "--bar", "1", "-n", "Lucy"]
   clad.decode(decoder, args)
-  |> should.equal(Ok(Options("hello", 1, False, 0.0)))
+  |> should.equal(Ok(Options("hello", 1, False, 0.0, ["Lucy"])))
 
   // explicit setting flag to 'true'
-  let args = ["--foo", "hello", "--bar", "1", "-z", "true"]
+  let args = ["--foo", "hello", "--bar", "1", "-z", "true", "-n", "Lucy"]
   clad.decode(decoder, args)
-  |> should.equal(Ok(Options("hello", 1, True, 0.0)))
+  |> should.equal(Ok(Options("hello", 1, True, 0.0, ["Lucy"])))
 
   // explicit setting flag to 'false'
-  let args = ["--foo", "hello", "--bar", "1", "-z", "false"]
+  let args = ["--foo", "hello", "--bar", "1", "-z", "false", "-n", "Lucy"]
   clad.decode(decoder, args)
-  |> should.equal(Ok(Options("hello", 1, False, 0.0)))
+  |> should.equal(Ok(Options("hello", 1, False, 0.0, ["Lucy"])))
+}
+
+pub fn decode_errors_test() {
+  clad.arg(
+    long_name: "foo",
+    short_name: "f",
+    of: dynamic.string,
+    then: clad.decoded,
+  )
+  |> clad.decode(["--bar", "hello"])
+  |> should.equal(Error([DecodeError("field", "nothing", ["--foo"])]))
+
+  clad.arg(
+    long_name: "foo",
+    short_name: "f",
+    of: dynamic.string,
+    then: clad.decoded,
+  )
+  |> clad.decode(["--foo", "1"])
+  |> should.equal(Error([DecodeError("String", "Int", ["--foo"])]))
+
+  clad.arg_with_default("foo", "f", dynamic.string, "hello", clad.decoded)
+  |> clad.decode(["--foo", "1"])
+  |> should.equal(Error([DecodeError("String", "Int", ["--foo"])]))
+
+  clad.arg(
+    long_name: "foo",
+    short_name: "f",
+    of: dynamic.string,
+    then: clad.decoded,
+  )
+  |> clad.decode(["-f", "hello", "-f", "world"])
+  |> should.equal(Error([DecodeError("String", "List", ["-f"])]))
+
+  clad.arg(
+    long_name: "foo",
+    short_name: "f",
+    of: dynamic.list(dynamic.string),
+    then: clad.decoded,
+  )
+  |> clad.decode(["-f", "1", "-f", "world"])
+  |> should.equal(Error([DecodeError("String", "Int", ["-f", "*"])]))
+
+  let decoder = {
+    use foo <- clad.arg("foo", "f", dynamic.string)
+    use bar <- clad.arg("bar", "b", dynamic.int)
+    use baz <- clad.toggle("baz", "z")
+    use qux <- clad.arg_with_default("qux", "q", dynamic.float, 0.0)
+    use names <- clad.arg("name", "n", dynamic.list(dynamic.string))
+    clad.decoded(Options(foo:, bar:, baz:, qux:, names:))
+  }
+
+  // no fields
+  let args = []
+  clad.decode(decoder, args)
+  |> should.equal(Error([DecodeError("field", "nothing", ["--foo"])]))
+
+  // missing first field
+  let args = ["-b", "1"]
+  clad.decode(decoder, args)
+  |> should.equal(Error([DecodeError("field", "nothing", ["--foo"])]))
+
+  // missing second field
+  let args = ["--foo", "hello"]
+  clad.decode(decoder, args)
+  |> should.equal(Error([DecodeError("field", "nothing", ["--bar"])]))
+
+  // wrong type
+  let args = ["--foo", "hello", "-b", "world"]
+  clad.decode(decoder, args)
+  |> should.equal(Error([DecodeError("Int", "String", ["-b"])]))
+
+  // default field wrong type
+  let args = ["--foo", "hello", "-b", "1", "--baz", "--qux", "world"]
+  clad.decode(decoder, args)
+  |> should.equal(Error([DecodeError("Float", "String", ["--qux"])]))
+
+  // list field wrong type
+  let args = [
+    "--foo", "hello", "-b", "1", "--baz", "--qux", "2.5", "-n", "Lucy", "-n",
+    "100",
+  ]
+  clad.decode(decoder, args)
+  |> should.equal(Error([DecodeError("String", "Int", ["-n", "*"])]))
 }
 
 pub fn add_bools_test() {
@@ -153,4 +269,88 @@ pub fn split_equals_test() {
   let args = ["--foo=hello=world", "--bar"]
   args.split_equals(args)
   |> should.equal(["--foo", "hello=world", "--bar"])
+}
+
+pub fn arg_test() {
+  clad.arg("foo", "f", dynamic.string, clad.decoded)
+  |> clad.decode(["--foo", "hello"])
+  |> should.equal(Ok("hello"))
+
+  clad.arg("foo", "f", dynamic.string, clad.decoded)
+  |> clad.decode(["-f", "hello"])
+  |> should.equal(Ok("hello"))
+
+  clad.arg("foo", "f", dynamic.string, clad.decoded)
+  |> clad.decode([])
+  |> should.equal(Error([DecodeError("field", "nothing", ["--foo"])]))
+
+  clad.arg("foo", "f", dynamic.list(dynamic.string), clad.decoded)
+  |> clad.decode(["-f", "hello", "--foo", "goodbye"])
+  |> should.equal(Ok(["goodbye", "hello"]))
+
+  clad.arg("foo", "f", dynamic.string, clad.decoded)
+  |> clad.decode(["-f", "hello", "--foo", "goodbye"])
+  |> should.equal(Error([DecodeError("String", "List", ["--foo"])]))
+
+  clad.arg("foo", "f", dynamic.list(dynamic.string), clad.decoded)
+  |> clad.decode(["-f", "1", "--foo", "hello"])
+  |> should.equal(Error([DecodeError("String", "Int", ["--foo", "*"])]))
+
+  clad.arg("foo", "f", dynamic.list(dynamic.string), clad.decoded)
+  |> clad.decode(["-f", "hello"])
+  |> should.equal(Ok(["hello"]))
+
+  clad.arg("foo", "f", dynamic.optional(dynamic.string), clad.decoded)
+  |> clad.decode(["-f", "hello"])
+  |> should.equal(Ok(Some("hello")))
+
+  clad.arg("foo", "f", dynamic.optional(dynamic.string), clad.decoded)
+  |> clad.decode([])
+  |> should.equal(Ok(None))
+}
+
+pub fn short_name_test() {
+  clad.short_name("f", dynamic.string, clad.decoded)
+  |> clad.decode(["-f", "hello"])
+  |> should.equal(Ok("hello"))
+  clad.short_name("f", dynamic.string, clad.decoded)
+  |> clad.decode(["-f", "123"])
+  |> should.equal(Error([DecodeError("String", "Int", ["-f"])]))
+  clad.short_name("f", dynamic.string, clad.decoded)
+  |> clad.decode([])
+  |> should.equal(Error([DecodeError("field", "nothing", ["-f"])]))
+}
+
+pub fn long_name_test() {
+  clad.long_name("foo", dynamic.string, clad.decoded)
+  |> clad.decode(["--foo", "hello"])
+  |> should.equal(Ok("hello"))
+  clad.long_name("foo", dynamic.string, clad.decoded)
+  |> clad.decode(["--foo", "123"])
+  |> should.equal(Error([DecodeError("String", "Int", ["--foo"])]))
+  clad.long_name("foo", dynamic.string, clad.decoded)
+  |> clad.decode([])
+  |> should.equal(Error([DecodeError("field", "nothing", ["--foo"])]))
+}
+
+pub fn toggle_test() {
+  clad.toggle("foo", "f", clad.decoded)
+  |> clad.decode(["--foo"])
+  |> should.equal(Ok(True))
+
+  clad.toggle("foo", "f", clad.decoded)
+  |> clad.decode([])
+  |> should.equal(Ok(False))
+
+  clad.toggle("foo", "f", clad.decoded)
+  |> clad.decode(["--foo", "true"])
+  |> should.equal(Ok(True))
+
+  clad.toggle("foo", "f", clad.decoded)
+  |> clad.decode(["--foo", "false"])
+  |> should.equal(Ok(False))
+
+  clad.toggle("foo", "f", clad.decoded)
+  |> clad.decode(["--foo", "bar"])
+  |> should.equal(Error([DecodeError("Bool", "String", ["--foo"])]))
 }
