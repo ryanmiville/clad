@@ -93,4 +93,11 @@ Options:
   -c, --cone             Put ice cream in a cone
 ```
 
+## Roadmap
+
+- [ ] Settle on general API
+- [ ] Add support for positional arguments
+- [ ] Add support for subcommands
+- [ ] Add support for environment variables
+
 Further documentation can be found at <https://hexdocs.pm/clad>.
