@@ -7,10 +7,11 @@
 
 Command line argument decoders for Gleam.
 
-- Clad provides primitives to build a `dynamic.Decoder` for command line arguments.
-- Arguments can be specified with long names (`--name`) or short names (`-n`).
-- Values are decoded in the form `--name value` or `--name=value`.
-- Boolean flags do not an explicit value. If the flag exists it is `True`, and if it is missing it is `False`. (i.e. `--verbose`)
+Clad aims to make it as easy as possible to parse command line arguments in
+Gleam. The goal is to support simple to medium complexity command line
+interfaces while staying as minimal as possible. It is inspired by
+[minimist](https://github.com/minimistjs/minimist) and
+[gleam/json](https://hexdocs.pm/gleam_json/)
 
 
 ## Usage
@@ -24,80 +25,51 @@ This program is in the [examples directory](https://github.com/ryanmiville/clad/
 ```gleam
 import argv
 import clad
-import gleam/bool
-import gleam/dynamic
-import gleam/int
-import gleam/io
-import gleam/string
+import decode/zero
 
-type Order {
-  Order(flavors: List(String), scoops: Int, cone: Bool)
-}
-
-fn order_decoder() {
-  use flavors <- clad.arg("flavor", "f", dynamic.list(dynamic.string))
-  use scoops <- clad.arg_with_default("scoops", "s", dynamic.int, default: 1)
-  use cone <- clad.toggle("cone", "c")
-  clad.decoded(Order(flavors:, scoops:, cone:))
+pub type Student {
+  Student(name: String, age: Int, enrolled: Bool, classes: List(String))
 }
 
 pub fn main() {
-  let order =
-    order_decoder()
-    |> clad.decode(argv.load().arguments)
-
-  case order {
-    Ok(order) -> take_order(order)
-    _ ->
-      io.println(
-        "
-Options:
-  -f, --flavor <FLAVOR>  Flavors of ice cream
-  -s, --scoops <SCOOPS>  Number of scoops per flavor [default: 1]
-  -c, --cone             Put ice cream in a cone
-      ",
-      )
+  let decoder = {
+    use name <- zero.field("name", zero.string)
+    use age <- zero.field("age", zero.int)
+    use enrolled <- zero.field("enrolled", zero.bool)
+    use classes <- clad.positional_arguments()
+    zero.success(Student(name:, age:, enrolled:, classes:))
   }
-}
 
-fn take_order(order: Order) {
-  let scoops = bool.guard(order.scoops == 1, " scoop", fn() { " scoops" })
-  let container = bool.guard(order.cone, "cone", fn() { "cup" })
-  let flavs = string.join(order.flavors, " and ")
-  io.println(
-    int.to_string(order.scoops)
-    <> scoops
-    <> " of "
-    <> flavs
-    <> " in a "
-    <> container
-    <> ", coming right up!",
-  )
+  // args: --name Lucy --age 8 --enrolled true math science art
+  let result = clad.decode(argv.load().arguments, decoder)
+  let assert Ok(Student("Lucy", 8, True, ["math", "science", "art"])) = result
 }
 ```
 
-Run the program
+Or, for more flexibility:
 
-```sh
-❯ gleam run -m examples/ice_cream -- -f vanilla
-1 scoop of vanilla in a cup, coming right up!
-❯ gleam run -m examples/ice_cream -- --flavor vanilla --flavor chocolate
-1 scoop of vanilla and chocolate in a cup, coming right up!
-❯ gleam run -m examples/ice_cream -- --flavor vanilla --flavor chocolate --scoops 2 --cone
-2 scoops of vanilla and chocolate in a cone, coming right up!
-❯ gleam run -m examples/ice_cream --
+```gleam
+import argv
+import clad
+import decode/zero
 
-Options:
-  -f, --flavor <FLAVOR>  Flavors of ice cream
-  -s, --scoops <SCOOPS>  Number of scoops per flavor [default: 1]
-  -c, --cone             Put ice cream in a cone
+pub type Student {
+  Student(name: String, age: Int, enrolled: Bool, classes: List(String))
+}
+
+pub fn main() {
+  let decoder = {
+    use name <- clad.opt("name", "n", zero.string)
+    use age <- clad.opt("age", "a", zero.int)
+    use enrolled <- clad.opt("enrolled", "e", clad.flag())
+    use classes <- clad.positional_arguments()
+    zero.success(Student(name:, age:, enrolled:, classes:))
+  }
+
+  // args: --name=Lucy -ea8 math science art
+  let result = clad.decode(argv.load().arguments, decoder)
+  let assert Ok(Student("Lucy", 8, True, ["math", "science", "art"])) = result
+}
 ```
-
-## Roadmap
-
-- [ ] Settle on general API
-- [ ] Add support for positional arguments
-- [ ] Add support for subcommands
-- [ ] Add support for environment variables
 
 Further documentation can be found at <https://hexdocs.pm/clad>.
