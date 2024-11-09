@@ -1,6 +1,7 @@
 import argv
 import clad
 import decode/zero
+import gleam/io
 
 pub type Student {
   Student(name: String, age: Int, enrolled: Bool, classes: List(String))
@@ -17,5 +18,6 @@ pub fn main() {
 
   // args: --name=Lucy -ea8 math science art
   let result = clad.decode(argv.load().arguments, decoder)
+  io.debug(result)
   let assert Ok(Student("Lucy", 8, True, ["math", "science", "art"])) = result
 }

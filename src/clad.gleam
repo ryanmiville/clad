@@ -289,6 +289,11 @@ fn parse_arg(
   state: State,
 ) -> #(State, List(String)) {
   case arg {
+    "--" -> {
+      let positional = [list.reverse(rest), state.positional] |> list.flatten
+      let new_state = State(..state, positional:)
+      #(new_state, [])
+    }
     "--" <> key -> {
       case string.split(key, "=") {
         [key, value] -> {
