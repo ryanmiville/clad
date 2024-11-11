@@ -1,10 +1,16 @@
 import argv
 import clad
 import decode/zero
-import gleam/io
+import gleam/string
 
 pub type Student {
-  Student(name: String, age: Int, enrolled: Bool, classes: List(String))
+  Student(
+    name: String,
+    age: Int,
+    enrolled: Bool,
+    classes: List(String),
+    notes: String,
+  )
 }
 
 pub fn main() {
@@ -12,12 +18,19 @@ pub fn main() {
     use name <- clad.opt("name", "n", zero.string)
     use age <- clad.opt("age", "a", zero.int)
     use enrolled <- clad.opt("enrolled", "e", clad.flag())
-    use classes <- clad.positional_arguments()
-    zero.success(Student(name:, age:, enrolled:, classes:))
+    use classes <- clad.opt("class", "c", clad.list(zero.string))
+    use notes <- clad.positional_arguments()
+    let notes = string.join(notes, " ")
+    zero.success(Student(name:, age:, enrolled:, classes:, notes:))
   }
 
-  // args: --name=Lucy -ea8 math science art
+  // args: --name=Lucy -ea8 -c math  -c art -- Lucy is a star student!
   let result = clad.decode(argv.load().arguments, decoder)
-  io.debug(result)
-  let assert Ok(Student("Lucy", 8, True, ["math", "science", "art"])) = result
+  let assert Ok(Student(
+    "Lucy",
+    8,
+    True,
+    ["math", "art"],
+    "Lucy is a star student!",
+  )) = result
 }

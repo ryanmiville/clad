@@ -187,6 +187,25 @@ pub fn positional_arguments_test() {
     zero.success(#(a, b, c))
   }
 
-  clad.decode(["-ab5", "foo", "bar", "baz"], decoder)
+  clad.decode(["-ab5", "foo", "--hello", "world", "bar", "baz"], decoder)
   |> should.equal(Ok(#(True, 5, ["foo", "bar", "baz"])))
+
+  clad.decode(["-ab5", "foo", "--", "--hello", "world", "bar", "baz"], decoder)
+  |> should.equal(Ok(#(True, 5, ["foo", "--hello", "world", "bar", "baz"])))
+}
+
+pub fn list_test() {
+  let decoder = {
+    use list <- zero.field("a", clad.list(zero.int))
+    zero.success(list)
+  }
+
+  clad.decode(["-a", "1", "-a", "2", "-a", "3"], decoder)
+  |> should.equal(Ok([1, 2, 3]))
+
+  clad.decode(["-a", "1"], decoder)
+  |> should.equal(Ok([1]))
+
+  clad.decode([], decoder)
+  |> should.be_error
 }

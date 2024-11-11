@@ -5,7 +5,7 @@
 ////
 //// The following arguments:
 //// ```sh
-//// -x=3 -y 4 -n5 -abc --hello world --beep=boop foo bar baz
+//// -x=3 -y 4 -n5 -abc --hello world --list one --list two --beep=boop foo bar baz
 //// ```
 //// will be encoded as a `dynamic.Dynamic` in this shape:
 //// ```json
@@ -16,6 +16,7 @@
 ////   "b": True,
 ////   "c": True,
 ////   "hello": "world",
+////   "list": ["one", "two"],
 ////   "beep": "boop",
 ////   "_": ["foo", "bar", "baz"]
 //// }
@@ -26,20 +27,44 @@
 //// Arguments can be decoded with a normal `zero.Decoder`
 ////
 //// ```gleam
-//// // args: --name Lucy --age 8 --enrolled true
+//// // args: --name Lucy --age 8 --enrolled true --class math --class art
 ////
 //// let decoder = {
 ////   use name <- zero.field("name", zero.string)
 ////   use age <- zero.field("age", zero.int)
 ////   use enrolled <- zero.field("enrolled", zero.bool)
-////   zero.success(Student(name:, age:, enrolled:))
+////   use classes <- zero.field("class", zero.list(zero.string))
+////   zero.success(Student(name:, age:, enrolled:, classes:))
 //// }
 ////
 //// let result = clad.decode(args, decoder)
-//// assert result == Ok(Student("Lucy", 8, True))
+//// assert result == Ok(Student("Lucy", 8, True, ["math", "art"]))
 //// ```
 //// Clad provides additional functions to support some common CLI behaviors.
 ////
+//// ## Lists
+////
+//// Clad encodes the arguments without any information about the target record.
+//// Unlike other formats like JSON, CLI argument types can be ambiguous. For
+//// instance, if there's only one string provided for a `List(String)` argument,
+//// Clad will encode it as a String.
+////
+//// To handle this case, use the `list()` function.
+////
+//// ```gleam
+//// // args: --name Lucy --age 8 --enrolled true --class math
+////
+//// let decoder = {
+////   use name <- zero.field("name", zero.string)
+////   use age <- zero.field("age", zero.int)
+////   use enrolled <- zero.field("enrolled", zero.bool)
+////   use classes <- zero.field("class", clad.list(zero.string))
+////   zero.success(Student(name:, age:, enrolled:, classes:))
+//// }
+////
+//// let result = clad.decode(args, decoder)
+//// assert result == Ok(Student("Lucy", 8, True, ["math"]))
+//// ```
 //// ## Boolean Flags
 ////
 //// CLI's commonly represent boolean flags just by the precense or absence of the
@@ -49,21 +74,22 @@
 //// Clad provides the `flag()` decoder to handle this case.
 ////
 //// ```gleam
-//// // args1: --name Lucy --age 8 --enrolled
-//// // args2: --name Bob --age 3
+//// // args1: --name Lucy --age 8 --class math --class art --enrolled
+//// // args2: --name Bob --age 3 --class math
 ////
 //// let decoder = {
 ////   use name <- zero.field("name", zero.string)
 ////   use age <- zero.field("age", zero.int)
 ////   use enrolled <- zero.field("enrolled", clad.flag())
-////   zero.success(Student(name:, age:, enrolled:))
+////   use classes <- zero.field("class", clad.list(zero.string))
+////   zero.success(Student(name:, age:, enrolled:, classes:))
 //// }
 ////
 //// let result = clad.decode(args1, decoder)
-//// assert result == Ok(Student("Lucy", 8, True))
+//// assert result == Ok(Student("Lucy", 8, True, ["math", "art"]))
 ////
 //// let result = clad.decode(args2, decoder)
-//// assert result == Ok(Student("Bob", 3, False))
+//// assert result == Ok(Student("Bob", 3, False, ["math"]))
 //// ```
 ////
 //// ## Alternate Names
@@ -74,46 +100,55 @@
 //// Clad provides the `opt()` function for this.
 ////
 //// ```gleam
-//// // args1: -n Lucy -a 8 -e
-//// // args2: --name Bob --age 3
+//// // args1: -n Lucy -a 8 -e -c math -c art
+//// // args2: --name Bob --age 3 --class math
 ////
 //// let decoder = {
 ////   use name <- clad.opt(long_name: "name", short_name: "n", zero.string)
 ////   use age <- clad.opt(long_name: "age", short_name: "a", zero.int)
 ////   use enrolled <- clad.opt(long_name: "enrolled", short_name: "e" clad.flag())
-////   zero.success(Student(name:, age:, enrolled:))
+////   use classes <- clad.opt(long_name: "class", short_name: "c", clad.list(zero.string))
+////   zero.success(Student(name:, age:, enrolled:, classes:))
 //// }
 ////
 //// let result = clad.decode(args1, decoder)
-//// assert result == Ok(Student("Lucy", 8, True))
+//// assert result == Ok(Student("Lucy", 8, True, ["math", "art"]))
 ////
 //// let result = clad.decode(args2, decoder)
-//// assert result == Ok(Student("Bob", 3, False))
+//// assert result == Ok(Student("Bob", 3, False, ["math"]))
 //// ```
 ////
 //// ## Positional Arguments
 ////
 //// A CLI may also support positional arguments. These are any arguments that are
 //// not attributed to a named option. Clad provides the `positional_arguments()` decoder to
-//// retrieve these values.
+//// retrieve these values. All arguments followed by a `--` will be added to the positional arguemnts.
 ////
 //// ```gleam
-//// // args1: -n Lucy -ea8  math science art
-//// // args2: --name Bob --age 3
+//// // args1: -n Lucy -ea8 -c math -c art -- Lucy is a star student!
+//// // args2: --name Bob who is --age 3 --class math Bob -- -idk
 ////
 //// let decoder = {
 ////   use name <- clad.opt("name", "n", zero.string)
 ////   use age <- clad.opt("age", "a", zero.int)
 ////   use enrolled <- clad.opt("enrolled", "e" clad.flag())
-////   use classes <- clad.positional_arguments()
-////   zero.success(Student(name:, age:, enrolled:, classes:))
+////   use classes <- clad.opt(long_name: "class", short_name: "c", clad.list(zero.string))
+////   use notes <- clad.positional_arguments()
+////   let notes = string.join(notes, " ")
+////   zero.success(Student(name:, age:, enrolled:, classes:, notes:))
 //// }
 ////
 //// let result = clad.decode(args1, decoder)
-//// assert result == Ok(Student("Lucy", 8, True, ["math", "science", "art"]))
+//// let assert Ok(Student(
+////   "Lucy",
+////   8,
+////   True,
+////   ["math", "art"],
+////   "Lucy is a star student!",
+//// )) = result
 ////
 //// let result = clad.decode(args2, decoder)
-//// assert result == Ok(Student("Bob", 3, False, []))
+//// assert result == Ok(Student("Bob", 3, False, ["math"], "who is Bob -idk"))
 //// ```
 
 import decode/zero.{type Decoder}
@@ -131,7 +166,11 @@ import gleam/string
 const positional_arg_name = "_"
 
 type State {
-  State(opts: Dict(String, Dynamic), positional: List(String))
+  State(
+    opts: Dict(String, Dynamic),
+    list_opts: Dict(String, List(Dynamic)),
+    positional: List(String),
+  )
 }
 
 /// Run a decoder on a list of command line arguments, decoding the value if it
@@ -162,6 +201,8 @@ pub fn decode(
 }
 
 /// Get all of the unnamed, positional arguments
+///
+/// Clad encodes all arguments following a `--` as positional arguments.
 /// ```gleam
 /// let decoder = {
 ///   use positional <- clad.positional_arguments
@@ -172,6 +213,9 @@ pub fn decode(
 ///
 /// let result = clad.decode(["-a1", "-b", "2"], decoder)
 /// assert result == Ok([])
+///
+/// let result = clad.decode(["-a1", "--", "-b", "2"], decoder)
+/// assert result == Ok(["-b", "2"])
 /// ```
 pub fn positional_arguments(
   next: fn(List(String)) -> Decoder(final),
@@ -188,6 +232,9 @@ pub fn positional_arguments(
 /// }
 /// let result = clad.decode(["-v"], decoder)
 /// assert result == Ok(True)
+///
+/// let result = clad.decode(["-v", "false"], decoder)
+/// assert result == Ok(False)
 ///
 /// let result = clad.decode([], decoder)
 /// assert result == Ok(False)
@@ -228,10 +275,12 @@ fn optional_field(
 ///   use name <- clad.opt("name", "n", zero.string)
 ///   zero.success(name)
 /// }
-/// clad.decode(["--name", "Lucy"], decoder)
-/// // -> Ok("Lucy")
-/// clad.decode(["-n", "Lucy"], decoder)
-/// // -> Ok("Lucy")
+///
+/// let result = clad.decode(["--name", "Lucy"], decoder)
+/// assert result == Ok("Lucy")
+///
+/// let result = clad.decode(["-n", "Lucy"], decoder)
+/// assert result == Ok("Lucy")
 /// ```
 pub fn opt(
   long_name: String,
@@ -246,15 +295,37 @@ pub fn opt(
   }
 }
 
+/// A `List` decoder that will wrap a single item in a list.
+/// Clad has no knowledge of the target record, so single item lists will be
+/// encoded as the inner type rather than a list.
+/// ```gleam
+/// let decoder = {
+///   use classes <- zero.field("class", clad.list(zero.string))
+///   zero.success(classes)
+/// }
+/// let result = clad.decode(["--class", "art"], decoder)
+/// assert result == Ok(["art"])
+/// ```
+pub fn list(of inner: Decoder(a)) -> Decoder(List(a)) {
+  let single = inner |> zero.map(list.wrap)
+  zero.one_of(zero.list(inner), [single])
+}
+
 fn parse(args: List(String)) -> State {
-  let state = State(dict.new(), list.new())
+  let state = State(dict.new(), dict.new(), list.new())
 
   let state = parse_args(args, state)
   State(..state, positional: list.reverse(state.positional))
 }
 
 fn to_dynamic(state: State) -> Dynamic {
+  let list_opts =
+    dict.map_values(state.list_opts, fn(_, values) {
+      list.reverse(values) |> dynamic.from
+    })
+
   state.opts
+  |> dict.merge(list_opts)
   |> dict.insert(positional_arg_name, dynamic.from(state.positional))
   |> dynamic.from
 }
@@ -354,8 +425,24 @@ fn parse_arg(
 }
 
 fn set_arg(state: State, key: String, value: String) -> State {
-  let opts = dict.insert(state.opts, key, parse_value(value))
-  State(..state, opts:)
+  let in_opt = dict.get(state.opts, key)
+  let in_list = dict.get(state.list_opts, key)
+  case in_opt, in_list {
+    Error(_), Error(_) -> {
+      let opts = dict.insert(state.opts, key, parse_value(value))
+      State(..state, opts:)
+    }
+    Ok(v), _ -> {
+      let opts = dict.delete(state.opts, key)
+      let list_opts = dict.insert(state.list_opts, key, [parse_value(value), v])
+      State(..state, opts:, list_opts:)
+    }
+    _, Ok(values) -> {
+      let list_opts =
+        dict.insert(state.list_opts, key, [parse_value(value), ..values])
+      State(..state, list_opts:)
+    }
+  }
 }
 
 fn parse_short(arg: String, state: State) -> #(State, Option(String)) {

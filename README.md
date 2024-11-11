@@ -7,8 +7,8 @@
 
 Command line argument decoders for Gleam.
 
-Clad aims to make it as easy as possible to parse command line arguments in
-Gleam. The goal is to support simple to medium complexity command line
+Clad makes it easy and familiar to parse command line arguments in
+Gleam. The goal is to support simple-to-medium complexity command line
 interfaces while staying as minimal as possible. It is inspired by
 [minimist](https://github.com/minimistjs/minimist) and
 [gleam/json](https://hexdocs.pm/gleam_json/)
@@ -36,13 +36,13 @@ pub fn main() {
     use name <- zero.field("name", zero.string)
     use age <- zero.field("age", zero.int)
     use enrolled <- zero.field("enrolled", zero.bool)
-    use classes <- clad.positional_arguments()
+    use classes <- zero.field("class", zero.list(zero.string))
     zero.success(Student(name:, age:, enrolled:, classes:))
   }
 
-  // args: --name Lucy --age 8 --enrolled true math science art
+  // args: --name Lucy --age 8 --enrolled true --class math --class art
   let result = clad.decode(argv.load().arguments, decoder)
-  let assert Ok(Student("Lucy", 8, True, ["math", "science", "art"])) = result
+  let assert Ok(Student("Lucy", 8, True, ["math", "art"])) = result
 }
 ```
 
@@ -62,13 +62,13 @@ pub fn main() {
     use name <- clad.opt("name", "n", zero.string)
     use age <- clad.opt("age", "a", zero.int)
     use enrolled <- clad.opt("enrolled", "e", clad.flag())
-    use classes <- clad.positional_arguments()
+    use classes <- clad.opt("class", "c", clad.list(zero.string))
     zero.success(Student(name:, age:, enrolled:, classes:))
   }
 
-  // args: --name=Lucy -ea8 math science art
+  // args: --name=Lucy -ea8 -c math -c art
   let result = clad.decode(argv.load().arguments, decoder)
-  let assert Ok(Student("Lucy", 8, True, ["math", "science", "art"])) = result
+  let assert Ok(Student("Lucy", 8, True, ["math", "art"])) = result
 }
 ```
 
