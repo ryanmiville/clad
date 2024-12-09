@@ -159,7 +159,7 @@ import gleam/float
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/regex
+import gleam/regexp
 import gleam/result
 import gleam/string
 
@@ -331,15 +331,15 @@ fn to_dynamic(state: State) -> Dynamic {
 }
 
 fn is_number(str: String) -> Bool {
-  case regex.from_string("^[-+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)$") {
-    Ok(re) -> regex.check(re, str)
+  case regexp.from_string("^[-+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)$") {
+    Ok(re) -> regexp.check(re, str)
     Error(_) -> False
   }
 }
 
 fn is_alpha(str: String) -> Bool {
-  case regex.from_string("^[a-zA-Z]+$") {
-    Ok(re) -> regex.check(re, str)
+  case regexp.from_string("^[a-zA-Z]+$") {
+    Ok(re) -> regexp.check(re, str)
     Error(_) -> False
   }
 }
