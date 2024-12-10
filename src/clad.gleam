@@ -223,10 +223,10 @@ pub fn positional_arguments(
   next(args)
 }
 
-/// A Bool decoder that returns False if value is not present
+/// Decode a command line flag as a Bool. Returns False if value is not present
 /// ```gleam
 /// let decoder = {
-///   use verbose <- zero.field("v", clad.flag())
+///   use verbose <- clad.flag("verbose", "v", clad.flag())
 ///   zero.success(verbose)
 /// }
 /// let result = clad.decode(["-v"], decoder)
@@ -256,23 +256,6 @@ fn optional_field(
   next: fn(Option(t)) -> Decoder(final),
 ) -> Decoder(final) {
   zero.optional_field(field_name, None, zero.optional(field_decoder), next)
-  // let decoding_function = fn(data: Dynamic) {
-  //   use <- bool.guard(dynamic.classify(data) == "Nil", Ok(None))
-
-  //   case zero.run(data, zero.optional(field_decoder)) {
-  //     Ok(None) -> {
-  //       case zero.run(data, field_decoder) {
-  //         Ok(v) -> Ok(Some(v))
-  //         Error(_) -> Ok(None)
-  //       }
-  //     }
-  //     other -> other
-  //   }
-  // }
-
-  // let decoder = zero.new_primitive_decoder(decoding_function, None)
-
-  // zero.field(field_name, decoder, next)
 }
 
 /// Decode a command line option by either a long name or short name
