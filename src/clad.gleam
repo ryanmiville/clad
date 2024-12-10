@@ -152,7 +152,6 @@
 //// ```
 
 import decode/zero.{type Decoder}
-import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/float
@@ -239,10 +238,16 @@ pub fn positional_arguments(
 /// let result = clad.decode([], decoder)
 /// assert result == Ok(False)
 /// ```
-pub fn flag() -> Decoder(Bool) {
-  zero.bool
-  |> zero.optional
-  |> zero.map(option.unwrap(_, False))
+pub fn flag(
+  long_name: String,
+  short_name: String,
+  next: fn(Bool) -> Decoder(final),
+) -> Decoder(final) {
+  use value <- optional_field(long_name, zero.bool)
+  case value {
+    Some(v) -> next(v)
+    None -> zero.optional_field(short_name, False, zero.bool, next)
+  }
 }
 
 fn optional_field(
@@ -250,23 +255,24 @@ fn optional_field(
   field_decoder: Decoder(t),
   next: fn(Option(t)) -> Decoder(final),
 ) -> Decoder(final) {
-  let decoding_function = fn(data: Dynamic) {
-    use <- bool.guard(dynamic.classify(data) == "Nil", Ok(None))
+  zero.optional_field(field_name, None, zero.optional(field_decoder), next)
+  // let decoding_function = fn(data: Dynamic) {
+  //   use <- bool.guard(dynamic.classify(data) == "Nil", Ok(None))
 
-    case zero.run(data, zero.optional(field_decoder)) {
-      Ok(None) -> {
-        case zero.run(data, field_decoder) {
-          Ok(v) -> Ok(Some(v))
-          Error(_) -> Ok(None)
-        }
-      }
-      other -> other
-    }
-  }
+  //   case zero.run(data, zero.optional(field_decoder)) {
+  //     Ok(None) -> {
+  //       case zero.run(data, field_decoder) {
+  //         Ok(v) -> Ok(Some(v))
+  //         Error(_) -> Ok(None)
+  //       }
+  //     }
+  //     other -> other
+  //   }
+  // }
 
-  let decoder = zero.new_primitive_decoder(decoding_function, None)
+  // let decoder = zero.new_primitive_decoder(decoding_function, None)
 
-  zero.field(field_name, decoder, next)
+  // zero.field(field_name, decoder, next)
 }
 
 /// Decode a command line option by either a long name or short name
