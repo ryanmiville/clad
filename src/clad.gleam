@@ -1,5 +1,5 @@
 //// This module encodes a list of command line arguments as a `dynamic.Dynamic` and
-//// provides functions to decode those arguments using a `decode/zero.Decoder`.
+//// provides functions to decode those arguments using a `dynamic/decode.Decoder`.
 ////
 //// # Encoding
 ////
@@ -24,17 +24,17 @@
 ////
 //// # Decoding
 ////
-//// Arguments can be decoded with a normal `zero.Decoder`
+//// Arguments can be decoded with a normal `dynamic/decode.Decoder`
 ////
 //// ```gleam
 //// // args: --name Lucy --age 8 --enrolled true --class math --class art
 ////
 //// let decoder = {
-////   use name <- zero.field("name", zero.string)
-////   use age <- zero.field("age", zero.int)
-////   use enrolled <- zero.field("enrolled", zero.bool)
-////   use classes <- zero.field("class", zero.list(zero.string))
-////   zero.success(Student(name:, age:, enrolled:, classes:))
+////   use name <- decode.field("name", decode.string)
+////   use age <- decode.field("age", decode.int)
+////   use enrolled <- decode.field("enrolled", decode.bool)
+////   use classes <- decode.field("class", decode.list(decode.string))
+////   decode.success(Student(name:, age:, enrolled:, classes:))
 //// }
 ////
 //// let result = clad.decode(args, decoder)
@@ -55,15 +55,40 @@
 //// // args: --name Lucy --age 8 --enrolled true --class math
 ////
 //// let decoder = {
-////   use name <- zero.field("name", zero.string)
-////   use age <- zero.field("age", zero.int)
-////   use enrolled <- zero.field("enrolled", zero.bool)
-////   use classes <- zero.field("class", clad.list(zero.string))
-////   zero.success(Student(name:, age:, enrolled:, classes:))
+////   use name <- decode.field("name", decode.string)
+////   use age <- decode.field("age", decode.int)
+////   use enrolled <- decode.field("enrolled", decode.bool)
+////   use classes <- decode.field("class", clad.list(decode.string))
+////   decode.success(Student(name:, age:, enrolled:, classes:))
 //// }
 ////
 //// let result = clad.decode(args, decoder)
 //// assert result == Ok(Student("Lucy", 8, True, ["math"]))
+//// ```
+//// ## Alternate Names
+////
+//// It is also common for CLI's to support long names and short names for options
+//// (e.g. `--name` and `-n`).
+////
+//// Clad provides the `opt()` function for this.
+////
+//// ```gleam
+//// // args1: -n Lucy -a 8 -e true -c math -c art
+//// // args2: --name Bob --age 3 --enrolled false --class math
+////
+//// let decoder = {
+////   use name <- clad.opt(long_name: "name", short_name: "n", decode.string)
+////   use age <- clad.opt(long_name: "age", short_name: "a", decode.int)
+////   use enrolled <- clad.opt(long_name: "enrolled", short_name: "e", decode.bool)
+////   use classes <- clad.opt(long_name: "class", short_name: "c", clad.list(decode.string))
+////   decode.success(Student(name:, age:, enrolled:, classes:))
+//// }
+////
+//// let result = clad.decode(args1, decoder)
+//// assert result == Ok(Student("Lucy", 8, True, ["math", "art"]))
+////
+//// let result = clad.decode(args2, decoder)
+//// assert result == Ok(Student("Bob", 3, False, ["math"]))
 //// ```
 //// ## Boolean Flags
 ////
@@ -78,11 +103,11 @@
 //// // args2: --name Bob --age 3 --class math
 ////
 //// let decoder = {
-////   use name <- zero.field("name", zero.string)
-////   use age <- zero.field("age", zero.int)
-////   use enrolled <- zero.field("enrolled", clad.flag())
-////   use classes <- zero.field("class", clad.list(zero.string))
-////   zero.success(Student(name:, age:, enrolled:, classes:))
+////   use name <- clad.opt(long_name: "name", short_name: "n", decode.string)
+////   use age <- clad.opt(long_name: "age", short_name: "a", decode.int)
+////   use enrolled <- clad.flag(long_name: "enrolled", short_name: "e")
+////   use classes <- clad.opt(long_name: "class", short_name: "c", clad.list(decode.string))
+////   decode.success(Student(name:, age:, enrolled:, classes:))
 //// }
 ////
 //// let result = clad.decode(args1, decoder)
@@ -90,70 +115,11 @@
 ////
 //// let result = clad.decode(args2, decoder)
 //// assert result == Ok(Student("Bob", 3, False, ["math"]))
-//// ```
-////
-//// ## Alternate Names
-////
-//// It is also common for CLI's to support long names and short names for options
-//// (e.g. `--name` and `-n`).
-////
-//// Clad provides the `opt()` function for this.
-////
-//// ```gleam
-//// // args1: -n Lucy -a 8 -e -c math -c art
-//// // args2: --name Bob --age 3 --class math
-////
-//// let decoder = {
-////   use name <- clad.opt(long_name: "name", short_name: "n", zero.string)
-////   use age <- clad.opt(long_name: "age", short_name: "a", zero.int)
-////   use enrolled <- clad.opt(long_name: "enrolled", short_name: "e" clad.flag())
-////   use classes <- clad.opt(long_name: "class", short_name: "c", clad.list(zero.string))
-////   zero.success(Student(name:, age:, enrolled:, classes:))
-//// }
-////
-//// let result = clad.decode(args1, decoder)
-//// assert result == Ok(Student("Lucy", 8, True, ["math", "art"]))
-////
-//// let result = clad.decode(args2, decoder)
-//// assert result == Ok(Student("Bob", 3, False, ["math"]))
-//// ```
-////
-//// ## Positional Arguments
-////
-//// A CLI may also support positional arguments. These are any arguments that are
-//// not attributed to a named option. Clad provides the `positional_arguments()` decoder to
-//// retrieve these values. All arguments followed by a `--` will be added to the positional arguemnts.
-////
-//// ```gleam
-//// // args1: -n Lucy -ea8 -c math -c art -- Lucy is a star student!
-//// // args2: --name Bob who is --age 3 --class math Bob -- -idk
-////
-//// let decoder = {
-////   use name <- clad.opt("name", "n", zero.string)
-////   use age <- clad.opt("age", "a", zero.int)
-////   use enrolled <- clad.opt("enrolled", "e" clad.flag())
-////   use classes <- clad.opt(long_name: "class", short_name: "c", clad.list(zero.string))
-////   use notes <- clad.positional_arguments()
-////   let notes = string.join(notes, " ")
-////   zero.success(Student(name:, age:, enrolled:, classes:, notes:))
-//// }
-////
-//// let result = clad.decode(args1, decoder)
-//// let assert Ok(Student(
-////   "Lucy",
-////   8,
-////   True,
-////   ["math", "art"],
-////   "Lucy is a star student!",
-//// )) = result
-////
-//// let result = clad.decode(args2, decoder)
-//// assert result == Ok(Student("Bob", 3, False, ["math"], "who is Bob -idk"))
 //// ```
 
-import decode/zero.{type Decoder}
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type Dynamic}
+import gleam/dynamic
+import gleam/dynamic/decode.{type DecodeError, type Decoder, type Dynamic}
 import gleam/float
 import gleam/int
 import gleam/list
@@ -182,8 +148,8 @@ type State {
 /// // args: --name Lucy --email=lucy@example.com
 ///
 /// let decoder = {
-///   use name <- zero.field("name", dynamic.string)
-///   use email <- zero.field("email", dynamic.string),
+///   use name <- decode.field("name", dynamic.string)
+///   use email <- decode.field("email", dynamic.string),
 ///   clad.decoded(SignUp(name:, email:))
 /// }
 ///
@@ -193,10 +159,10 @@ type State {
 pub fn decode(
   args: List(String),
   decoder: Decoder(t),
-) -> Result(t, List(dynamic.DecodeError)) {
+) -> Result(t, List(DecodeError)) {
   parse(args)
   |> to_dynamic
-  |> zero.run(decoder)
+  |> decode.run(decoder)
 }
 
 /// Get all of the unnamed, positional arguments
@@ -205,7 +171,7 @@ pub fn decode(
 /// ```gleam
 /// let decoder = {
 ///   use positional <- clad.positional_arguments
-///   zero.success(positional)
+///   decode.success(positional)
 /// }
 /// let result = clad.decode(["-a1", "hello", "-b", "2", "world"], decoder)
 /// assert result == Ok(["hello", "world"])
@@ -219,15 +185,15 @@ pub fn decode(
 pub fn positional_arguments(
   next: fn(List(String)) -> Decoder(final),
 ) -> Decoder(final) {
-  use args <- zero.field(positional_arg_name, zero.list(zero.string))
+  use args <- decode.field(positional_arg_name, decode.list(decode.string))
   next(args)
 }
 
 /// Decode a command line flag as a Bool. Returns False if value is not present
 /// ```gleam
 /// let decoder = {
-///   use verbose <- clad.flag("verbose", "v", clad.flag())
-///   zero.success(verbose)
+///   use verbose <- clad.flag("verbose", "v", decode.bool)
+///   decode.success(verbose)
 /// }
 /// let result = clad.decode(["-v"], decoder)
 /// assert result == Ok(True)
@@ -243,10 +209,10 @@ pub fn flag(
   short_name: String,
   next: fn(Bool) -> Decoder(final),
 ) -> Decoder(final) {
-  use value <- optional_field(long_name, zero.bool)
+  use value <- optional_field(long_name, decode.bool)
   case value {
     Some(v) -> next(v)
-    None -> zero.optional_field(short_name, False, zero.bool, next)
+    None -> decode.optional_field(short_name, False, decode.bool, next)
   }
 }
 
@@ -255,14 +221,14 @@ fn optional_field(
   field_decoder: Decoder(t),
   next: fn(Option(t)) -> Decoder(final),
 ) -> Decoder(final) {
-  zero.optional_field(field_name, None, zero.optional(field_decoder), next)
+  decode.optional_field(field_name, None, decode.optional(field_decoder), next)
 }
 
 /// Decode a command line option by either a long name or short name
 /// ```gleam
 /// let decoder = {
-///   use name <- clad.opt("name", "n", zero.string)
-///   zero.success(name)
+///   use name <- clad.opt("name", "n", decode.string)
+///   decode.success(name)
 /// }
 ///
 /// let result = clad.decode(["--name", "Lucy"], decoder)
@@ -280,7 +246,7 @@ pub fn opt(
   use value <- optional_field(long_name, field_decoder)
   case value {
     Some(v) -> next(v)
-    None -> zero.field(short_name, field_decoder, next)
+    None -> decode.field(short_name, field_decoder, next)
   }
 }
 
@@ -289,15 +255,15 @@ pub fn opt(
 /// encoded as the inner type rather than a list.
 /// ```gleam
 /// let decoder = {
-///   use classes <- zero.field("class", clad.list(zero.string))
-///   zero.success(classes)
+///   use classes <- decode.field("class", clad.list(decode.string))
+///   decode.success(classes)
 /// }
 /// let result = clad.decode(["--class", "art"], decoder)
 /// assert result == Ok(["art"])
 /// ```
 pub fn list(of inner: Decoder(a)) -> Decoder(List(a)) {
-  let single = inner |> zero.map(list.wrap)
-  zero.one_of(zero.list(inner), [single])
+  let single = inner |> decode.map(list.wrap)
+  decode.one_of(decode.list(inner), [single])
 }
 
 fn parse(args: List(String)) -> State {

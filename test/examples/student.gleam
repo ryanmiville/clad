@@ -1,6 +1,6 @@
 import argv
 import clad
-import decode/zero
+import gleam/dynamic/decode
 import gleam/string
 
 pub type Student {
@@ -15,13 +15,13 @@ pub type Student {
 
 pub fn main() {
   let decoder = {
-    use name <- clad.opt("name", "n", zero.string)
-    use age <- clad.opt("age", "a", zero.int)
+    use name <- clad.opt("name", "n", decode.string)
+    use age <- clad.opt("age", "a", decode.int)
     use enrolled <- clad.flag("enrolled", "e")
-    use classes <- clad.opt("class", "c", clad.list(zero.string))
+    use classes <- clad.opt("class", "c", clad.list(decode.string))
     use notes <- clad.positional_arguments()
     let notes = string.join(notes, " ")
-    zero.success(Student(name:, age:, enrolled:, classes:, notes:))
+    decode.success(Student(name:, age:, enrolled:, classes:, notes:))
   }
 
   // args: --name=Lucy -ea8 -c math  -c art -- Lucy is a star student!
