@@ -25,7 +25,7 @@ This program is in the [examples directory](https://github.com/ryanmiville/clad/
 ```gleam
 import argv
 import clad
-import decode/zero
+import gleam/dynamic/decode
 
 pub type Student {
   Student(name: String, age: Int, enrolled: Bool, classes: List(String))
@@ -33,11 +33,11 @@ pub type Student {
 
 pub fn main() {
   let decoder = {
-    use name <- zero.field("name", zero.string)
-    use age <- zero.field("age", zero.int)
-    use enrolled <- zero.field("enrolled", zero.bool)
-    use classes <- zero.field("class", zero.list(zero.string))
-    zero.success(Student(name:, age:, enrolled:, classes:))
+    use name <- decode.field("name", decode.string)
+    use age <- decode.field("age", decode.int)
+    use enrolled <- decode.field("enrolled", decode.bool)
+    use classes <- decode.field("class", decode.list(decode.string))
+    decode.success(Student(name:, age:, enrolled:, classes:))
   }
 
   // args: --name Lucy --age 8 --enrolled true --class math --class art
@@ -51,7 +51,7 @@ Or, for more flexibility:
 ```gleam
 import argv
 import clad
-import decode/zero
+import gleam/dynamic/decode
 
 pub type Student {
   Student(name: String, age: Int, enrolled: Bool, classes: List(String))
@@ -59,11 +59,11 @@ pub type Student {
 
 pub fn main() {
   let decoder = {
-    use name <- clad.opt("name", "n", zero.string)
-    use age <- clad.opt("age", "a", zero.int)
+    use name <- clad.opt("name", "n", decode.string)
+    use age <- clad.opt("age", "a", decode.int)
     use enrolled <- clad.flag("enrolled", "e")
-    use classes <- clad.opt("class", "c", clad.list(zero.string))
-    zero.success(Student(name:, age:, enrolled:, classes:))
+    use classes <- clad.opt("class", "c", clad.list(decode.string))
+    decode.success(Student(name:, age:, enrolled:, classes:))
   }
 
   // args: --name=Lucy -ea8 -c math -c art

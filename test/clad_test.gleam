@@ -1,6 +1,5 @@
 import clad
-import decode/zero
-import gleam/dynamic.{DecodeError}
+import gleam/dynamic/decode.{DecodeError}
 import gleeunit
 import gleeunit/should
 
@@ -13,41 +12,41 @@ type Options {
 }
 
 pub fn decode_test() {
-  clad.opt("foo", "f", zero.string, zero.success)
+  clad.opt("foo", "f", decode.string, decode.success)
   |> clad.decode(["-f", "hello"], _)
   |> should.equal(Ok("hello"))
 
-  clad.opt("foo", "f", zero.string, zero.success)
+  clad.opt("foo", "f", decode.string, decode.success)
   |> clad.decode(["--foo", "hello"], _)
   |> should.equal(Ok("hello"))
 
-  zero.field("b", zero.int, zero.success)
+  decode.field("b", decode.int, decode.success)
   |> clad.decode(["-b", "1"], _)
   |> should.equal(Ok(1))
 
-  clad.flag("baz", "z", zero.success)
+  clad.flag("baz", "z", decode.success)
   |> clad.decode(["-z"], _)
   |> should.equal(Ok(True))
 
-  clad.flag("baz", "z", zero.success)
+  clad.flag("baz", "z", decode.success)
   |> clad.decode([], _)
   |> should.equal(Ok(False))
 
-  zero.field("q", zero.float, zero.success)
+  decode.field("q", decode.float, decode.success)
   |> clad.decode(["-q", "2.5"], _)
   |> should.equal(Ok(2.5))
 
-  zero.field("z", zero.float, zero.success)
+  decode.field("z", decode.float, decode.success)
   |> clad.decode([], _)
   |> should.be_error
 
   let decoder = {
-    use foo <- clad.opt("foo", "f", zero.string)
-    use bar <- clad.opt("bar", "b", zero.int)
+    use foo <- clad.opt("foo", "f", decode.string)
+    use bar <- clad.opt("bar", "b", decode.int)
     use baz <- clad.flag("baz", "z")
-    use qux <- clad.opt("qux", "q", zero.float)
+    use qux <- clad.opt("qux", "q", decode.float)
     use names <- clad.positional_arguments
-    zero.success(Options(foo:, bar:, baz:, qux:, names:))
+    decode.success(Options(foo:, bar:, baz:, qux:, names:))
   }
 
   // all fields set
@@ -79,21 +78,21 @@ pub fn decode_test() {
 }
 
 pub fn decode_errors_test() {
-  zero.field("f", zero.string, zero.success)
+  decode.field("f", decode.string, decode.success)
   |> clad.decode(["--bar", "hello"], _)
   |> should.equal(Error([DecodeError("Field", "Nothing", ["f"])]))
 
-  zero.field("foo", zero.string, zero.success)
+  decode.field("foo", decode.string, decode.success)
   |> clad.decode(["--foo", "1"], _)
   |> should.equal(Error([DecodeError("String", "Int", ["foo"])]))
 
   let decoder = {
-    use foo <- clad.opt("foo", "f", zero.string)
-    use bar <- clad.opt("bar", "b", zero.int)
+    use foo <- clad.opt("foo", "f", decode.string)
+    use bar <- clad.opt("bar", "b", decode.int)
     use baz <- clad.flag("baz", "z")
-    use qux <- clad.opt("qux", "q", zero.float)
+    use qux <- clad.opt("qux", "q", decode.float)
     use names <- clad.positional_arguments
-    zero.success(Options(foo:, bar:, baz:, qux:, names:))
+    decode.success(Options(foo:, bar:, baz:, qux:, names:))
   }
 
   // no fields
@@ -139,22 +138,22 @@ pub fn decode_errors_test() {
 }
 
 pub fn opt_test() {
-  clad.opt("foo", "f", zero.string, zero.success)
+  clad.opt("foo", "f", decode.string, decode.success)
   |> clad.decode(["--foo", "hello"], _)
   |> should.equal(Ok("hello"))
 
-  clad.opt("foo", "f", zero.string, zero.success)
+  clad.opt("foo", "f", decode.string, decode.success)
   |> clad.decode(["-f", "hello"], _)
   |> should.equal(Ok("hello"))
-  // clad.opt("foo", "f", zero.string, zero.success)
+  // clad.opt("foo", "f", decode.string, decode.success)
   // |> clad.decode([], _)
   // |> should.equal(Error([DecodeError("String", "Nothing", ["f"])]))
 
-  // clad.opt("foo", "f", zero.optional(zero.string), zero.success)
+  // clad.opt("foo", "f", decode.optional(decode.string), decode.success)
   // |> clad.decode(["-f", "hello"], _)
   // |> should.equal(Ok(Some("hello")))
 
-  // clad.opt("foo", "f", zero.optional(zero.string), zero.success)
+  // clad.opt("foo", "f", decode.optional(decode.string), decode.success)
   // |> clad.decode([], _)
   // |> should.equal(Ok(None))
 }
@@ -162,7 +161,7 @@ pub fn opt_test() {
 pub fn flag_test() {
   let decoder = {
     use verbose <- clad.flag("verbose", "v")
-    zero.success(verbose)
+    decode.success(verbose)
   }
 
   clad.decode(["-v"], decoder)
@@ -183,10 +182,10 @@ pub fn flag_test() {
 
 pub fn positional_arguments_test() {
   let decoder = {
-    use a <- zero.field("a", zero.bool)
-    use b <- zero.field("b", zero.int)
+    use a <- decode.field("a", decode.bool)
+    use b <- decode.field("b", decode.int)
     use c <- clad.positional_arguments()
-    zero.success(#(a, b, c))
+    decode.success(#(a, b, c))
   }
 
   clad.decode(["-ab5", "foo", "--hello", "world", "bar", "baz"], decoder)
@@ -198,8 +197,8 @@ pub fn positional_arguments_test() {
 
 pub fn list_test() {
   let decoder = {
-    use list <- zero.field("a", clad.list(zero.int))
-    zero.success(list)
+    use list <- decode.field("a", clad.list(decode.int))
+    decode.success(list)
   }
 
   clad.decode(["-a", "1", "-a", "2", "-a", "3"], decoder)
