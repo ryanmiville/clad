@@ -58,7 +58,9 @@
 ////   use name <- decode.field("name", decode.string)
 ////   use age <- decode.field("age", decode.int)
 ////   use enrolled <- decode.field("enrolled", decode.bool)
+////   // ----------------------------------------------------------------------
 ////   use classes <- decode.field("class", clad.list(decode.string))
+////   // ----------------------------------------------------------------------
 ////   decode.success(Student(name:, age:, enrolled:, classes:))
 //// }
 ////
@@ -105,7 +107,9 @@
 //// let decoder = {
 ////   use name <- clad.opt(long_name: "name", short_name: "n", decode.string)
 ////   use age <- clad.opt(long_name: "age", short_name: "a", decode.int)
+////   // ----------------------------------------------------------------------
 ////   use enrolled <- clad.flag(long_name: "enrolled", short_name: "e")
+////   // ----------------------------------------------------------------------
 ////   use classes <- clad.opt(long_name: "class", short_name: "c", clad.list(decode.string))
 ////   decode.success(Student(name:, age:, enrolled:, classes:))
 //// }
@@ -192,7 +196,7 @@ pub fn positional_arguments(
 /// Decode a command line flag as a Bool. Returns False if value is not present
 /// ```gleam
 /// let decoder = {
-///   use verbose <- clad.flag("verbose", "v", decode.bool)
+///   use verbose <- clad.flag("verbose", "v")
 ///   decode.success(verbose)
 /// }
 /// let result = clad.decode(["-v"], decoder)
