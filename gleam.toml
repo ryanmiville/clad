@@ -5,7 +5,7 @@ version = "1.0.1"
 # your project to the Hex package manager.
 #
 description = "Command line argument decoders for Gleam"
-licences = ["Apache-2.0"]
+licences = ["MIT"]
 repository = { type = "github", user = "ryanmiville", repo = "clad" }
 # links = [{ title = "Website", href = "" }]
 #
