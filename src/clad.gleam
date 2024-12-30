@@ -213,10 +213,34 @@ pub fn flag(
   short_name: String,
   next: fn(Bool) -> Decoder(final),
 ) -> Decoder(final) {
-  use value <- optional_field(long_name, decode.bool)
+  optional_opt(long_name, short_name, False, decode.bool, next)
+}
+
+/// Decode a command line option by either a long name or short name.
+/// The given default value is returned if the option does not exist.
+/// ```gleam
+/// let decoder = {
+///   use name <- clad.optional_opt("name", "n", "Lucy", decode.string)
+///   decode.success(name)
+/// }
+///
+/// let result = clad.decode(["--name", "Joe"], decoder)
+/// assert result == Ok("Joe")
+///
+/// let result = clad.decode([], decoder)
+/// assert result == Ok("Lucy")
+/// ```
+pub fn optional_opt(
+  long_name: String,
+  short_name: String,
+  default: t,
+  field_decoder: Decoder(t),
+  next: fn(t) -> Decoder(final),
+) -> Decoder(final) {
+  use value <- optional_field(long_name, field_decoder)
   case value {
     Some(v) -> next(v)
-    None -> decode.optional_field(short_name, False, decode.bool, next)
+    None -> decode.optional_field(short_name, default, field_decoder, next)
   }
 }
 

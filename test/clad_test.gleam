@@ -210,3 +210,19 @@ pub fn list_test() {
   clad.decode([], decoder)
   |> should.be_error
 }
+
+pub fn optional_opt_test() {
+  let decoder = {
+    use name <- clad.optional_opt("name", "n", "Lucy", decode.string)
+    decode.success(name)
+  }
+
+  clad.decode(["--name", "Joe"], decoder)
+  |> should.equal(Ok("Joe"))
+
+  clad.decode(["-n", "Joe"], decoder)
+  |> should.equal(Ok("Joe"))
+
+  clad.decode([], decoder)
+  |> should.equal(Ok("Lucy"))
+}
