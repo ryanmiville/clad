@@ -128,6 +128,7 @@ import gleam/float
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/pair
 import gleam/regexp
 import gleam/result
 import gleam/string
@@ -304,13 +305,20 @@ fn parse(args: List(String)) -> State {
 fn to_dynamic(state: State) -> Dynamic {
   let list_opts =
     dict.map_values(state.list_opts, fn(_, values) {
-      list.reverse(values) |> dynamic.from
+      list.reverse(values) |> dynamic.list
     })
+
+  let positionals =
+    state.positional
+    |> list.map(dynamic.string)
+    |> dynamic.list
 
   state.opts
   |> dict.merge(list_opts)
-  |> dict.insert(positional_arg_name, dynamic.from(state.positional))
-  |> dynamic.from
+  |> dict.insert(positional_arg_name, positionals)
+  |> dict.to_list
+  |> list.map(pair.map_first(_, dynamic.string))
+  |> dynamic.properties
 }
 
 fn is_number(str: String) -> Bool {
@@ -444,45 +452,6 @@ fn parse_short(arg: String, state: State) -> #(State, Option(String)) {
   }
 }
 
-fn parse_short_arg(
-  arg: String,
-  state: State,
-  next: Option(String),
-) -> #(State, List(String)) {
-  case string.length(arg) {
-    1 -> {
-      let value = option.unwrap(next, "true")
-      let new_state = set_arg(state, arg, value)
-      #(new_state, [])
-    }
-    _ -> {
-      parse_cluster(arg, state, next)
-    }
-  }
-}
-
-fn parse_cluster(
-  cluster: String,
-  state: State,
-  next: Option(String),
-) -> #(State, List(String)) {
-  case string.pop_grapheme(cluster) {
-    Ok(#(h, rest)) -> {
-      case is_alpha(h), is_number(rest) {
-        True, True -> #(
-          set_arg(state, h, rest),
-          option.map(next, list.wrap) |> option.unwrap([]),
-        )
-        _, _ -> {
-          let new_state = set_arg(state, h, "true")
-          parse_short_arg(rest, new_state, next)
-        }
-      }
-    }
-    _ -> #(state, option.map(next, list.wrap) |> option.unwrap([]))
-  }
-}
-
 fn append_positional(state: State, value: String) -> State {
   let positional = [value, ..state.positional]
   State(..state, positional:)
@@ -492,23 +461,23 @@ fn parse_value(input: String) -> Dynamic {
   try_parse_float(input)
   |> result.or(try_parse_int(input))
   |> result.or(try_parse_bool(input))
-  |> result.unwrap(dynamic.from(input))
+  |> result.unwrap(dynamic.string(input))
 }
 
 fn try_parse_float(input: String) {
   float.parse(input)
-  |> result.map(dynamic.from)
+  |> result.map(dynamic.float)
 }
 
 fn try_parse_int(input: String) {
   int.parse(input)
-  |> result.map(dynamic.from)
+  |> result.map(dynamic.int)
 }
 
 fn try_parse_bool(input: String) {
   case input {
-    "true" | "True" -> Ok(dynamic.from(True))
-    "false" | "False" -> Ok(dynamic.from(False))
+    "true" | "True" -> Ok(dynamic.bool(True))
+    "false" | "False" -> Ok(dynamic.bool(False))
     _ -> Error(Nil)
   }
 }
